@@ -87,9 +87,12 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 #start-btn:not(:disabled):active { background:rgba(100,180,100,.15); }
 
 /* Sound panel */
-#sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:8px; }
-#sound-panel h2 { font-size:clamp(8px,2vw,11px); color:#99cc99; }
-.sound-close { margin-top:6px; padding:4px 14px; background:transparent; color:#88aa88; border:1px solid #446644; font-family:inherit; font-size:clamp(7px,1.8vw,10px); cursor:pointer; border-radius:3px; }
+#sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:14px; }
+#sound-panel h2 { font-size:clamp(16px,4vw,22px); color:#99cc99; }
+.vol-block { width:100%; display:flex; flex-direction:column; gap:6px; }
+.vol-block label { font-size:clamp(18px,4.5vw,24px); color:#88aa88; }
+.vol-block-slider { display:flex; align-items:center; gap:8px; width:100%; }
+.vol-block-slider span { font-size:clamp(10px,2.5vw,14px); color:#99bb99; min-width:2.8em; }
 
 /* Now-playing / connecting bar */
 #connecting-bar {
@@ -182,18 +185,20 @@ input[type=range]::-moz-range-thumb { width:26px; height:26px; background:linear
     <!-- Sound settings panel -->
     <div id="sound-panel">
       <h2>── 音量設定 ──</h2>
-      <div class="vol-row-sm">
+      <div class="vol-block">
         <label>エンジン</label>
-        <input type="range" id="engine-vol2" min="0" max="100" value="70">
-        <span id="engine-vol2-lbl">70%</span>
+        <div class="vol-block-slider">
+          <input type="range" id="engine-vol2" min="0" max="100" value="70">
+          <span id="engine-vol2-lbl">70%</span>
+        </div>
       </div>
-      <div class="vol-row-sm">
+      <div class="vol-block">
         <label>Music</label>
-        <input type="range" id="yt-vol2" min="0" max="100" value="70">
-        <span id="yt-vol2-lbl">70%</span>
+        <div class="vol-block-slider">
+          <input type="range" id="yt-vol2" min="0" max="100" value="70">
+          <span id="yt-vol2-lbl">70%</span>
+        </div>
       </div>
-      <div id="now-playing2" style="font-size:clamp(6px,1.5vw,8px);color:#669966;text-align:center;margin-top:2px;"></div>
-      <button class="sound-close" id="sound-close">閉じる</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -507,7 +512,7 @@ let currentVolAdj = 1.0, baseVol = 70;
 let playlist = [{ id:'Uw5OLnN7UvM', type:'yt', name:'Bill Withers,Just The Two Of Us', color:null, rain:false, star:false, volAdj:1 }];
 let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null;
 
-const nowPlayingEl  = document.getElementById('now-playing2');
+const nowPlayingEl  = null; // now-playing2 removed
 const connectingEl  = connectBar;
 
 const decisionSE = new Audio('music/決定ボタンを押す7.mp3');
@@ -967,10 +972,7 @@ btnAuto.addEventListener('click',()=>{
 });
 
 btnSoundBtn.addEventListener('click',()=>{
-  soundPanel.style.display='flex';
-});
-document.getElementById('sound-close').addEventListener('click',()=>{
-  soundPanel.style.display='none';
+  soundPanel.style.display=soundPanel.style.display==='flex'?'none':'flex';
 });
 
 btnFs.addEventListener('click',()=>{
