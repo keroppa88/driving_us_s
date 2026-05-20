@@ -87,9 +87,12 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 #start-btn:not(:disabled):active { background:rgba(100,180,100,.15); }
 
 /* Sound panel */
-#sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:8px; }
-#sound-panel h2 { font-size:clamp(8px,2vw,11px); color:#99cc99; }
-.sound-close { margin-top:6px; padding:4px 14px; background:transparent; color:#88aa88; border:1px solid #446644; font-family:inherit; font-size:clamp(7px,1.8vw,10px); cursor:pointer; border-radius:3px; }
+#sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:14px; }
+#sound-panel h2 { font-size:clamp(16px,4vw,22px); color:#99cc99; }
+.vol-block { width:100%; display:flex; flex-direction:column; gap:6px; }
+.vol-block label { font-size:clamp(18px,4.5vw,24px); color:#88aa88; }
+.vol-block-slider { display:flex; align-items:center; gap:8px; width:100%; }
+.vol-block-slider span { font-size:clamp(10px,2.5vw,14px); color:#99bb99; min-width:2.8em; }
 
 /* Now-playing / connecting bar */
 #connecting-bar {
@@ -104,7 +107,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 
 /* ── Controls area ── */
 #controls { flex:1; display:flex; flex-direction:column; gap:8px; }
-#controls-mid { flex:1; display:flex; align-items:stretch; gap:8px; }
+#controls-mid { flex:4; display:flex; align-items:stretch; gap:8px; }
 
 /* D-pad housing */
 #dpad-housing {
@@ -131,14 +134,13 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 #dpad-corner-br { grid-area:3/3; background:transparent!important; box-shadow:none!important; }
 
 /* Sliders */
-#sliders-area { flex:1; display:flex; flex-direction:column; gap:6px; justify-content:center; }
+#sliders-area { flex:1; display:flex; flex-direction:column; }
+#sliders-area .slider-panel { flex:1; display:flex; flex-direction:column; justify-content:center; }
 .slider-panel {
   background:linear-gradient(160deg,#b8b49e,#a8a490); border-radius:12px; padding:5px 10px 4px;
   box-shadow:inset 3px 3px 7px rgba(0,0,0,.28), inset -1px -1px 3px rgba(255,255,255,.32);
 }
 .tick-row { height:8px; padding:0 2px; margin-bottom:2px; background:repeating-linear-gradient(to right,#888 0px,#888 1px,transparent 1px,transparent 7px); background-size:calc(100%/13) 100%; }
-#lr-panel { position:relative; }
-#lr-panel::after { content:''; position:absolute; left:50%; top:4px; bottom:4px; width:3px; background:#555; transform:translateX(-50%); border-radius:2px; pointer-events:none; }
 input[type=range] { width:100%; height:22px; -webkit-appearance:none; appearance:none; background:transparent; cursor:pointer; }
 input[type=range]::-webkit-slider-runnable-track { height:5px; background:linear-gradient(to right,#666,#777); border-radius:3px; box-shadow:inset 1px 1px 4px rgba(0,0,0,.5); }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:26px; height:26px; background:linear-gradient(145deg,#555,#1e1e1e); border-radius:5px; margin-top:-10px; box-shadow:2px 2px 6px rgba(0,0,0,.55), -1px -1px 2px rgba(255,255,255,.18); }
@@ -147,7 +149,7 @@ input[type=range]::-moz-range-thumb { width:26px; height:26px; background:linear
 .slider-label { text-align:center; font-size:clamp(7px,1.8vw,9px); color:#5a5848; letter-spacing:.05em; margin-top:1px; }
 
 /* Bottom buttons */
-#buttons-row { display:flex; justify-content:space-around; align-items:flex-start; padding:0 2px; }
+#buttons-row { flex:1; display:flex; justify-content:space-around; align-items:center; padding:0 2px; }
 .action-btn-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
 .action-btn {
   width:clamp(38px,12.5vw,54px); height:clamp(38px,12.5vw,54px); border-radius:50%; border:none;
@@ -183,18 +185,20 @@ input[type=range]::-moz-range-thumb { width:26px; height:26px; background:linear
     <!-- Sound settings panel -->
     <div id="sound-panel">
       <h2>── 音量設定 ──</h2>
-      <div class="vol-row-sm">
+      <div class="vol-block">
         <label>エンジン</label>
-        <input type="range" id="engine-vol2" min="0" max="100" value="70">
-        <span id="engine-vol2-lbl">70%</span>
+        <div class="vol-block-slider">
+          <input type="range" id="engine-vol2" min="0" max="100" value="70">
+          <span id="engine-vol2-lbl">70%</span>
+        </div>
       </div>
-      <div class="vol-row-sm">
+      <div class="vol-block">
         <label>Music</label>
-        <input type="range" id="yt-vol2" min="0" max="100" value="70">
-        <span id="yt-vol2-lbl">70%</span>
+        <div class="vol-block-slider">
+          <input type="range" id="yt-vol2" min="0" max="100" value="70">
+          <span id="yt-vol2-lbl">70%</span>
+        </div>
       </div>
-      <div id="now-playing2" style="font-size:clamp(6px,1.5vw,8px);color:#669966;text-align:center;margin-top:2px;"></div>
-      <button class="sound-close" id="sound-close">閉じる</button>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -227,11 +231,6 @@ input[type=range]::-moz-range-thumb { width:26px; height:26px; background:linear
       </div>
       <!-- Sliders -->
       <div id="sliders-area">
-        <div class="slider-panel" id="lr-panel">
-          <div class="tick-row"></div>
-          <input type="range" id="lr-slider" min="-100" max="100" value="0">
-          <div class="slider-label">左右操作</div>
-        </div>
         <div class="slider-panel">
           <div class="tick-row"></div>
           <input type="range" id="speed-slider" min="0" max="100" value="0">
@@ -243,23 +242,24 @@ input[type=range]::-moz-range-thumb { width:26px; height:26px; background:linear
     <!-- Bottom buttons -->
     <div id="buttons-row">
       <div class="action-btn-wrap">
+        <span class="btn-label">再生・停止</span>
         <button class="action-btn active" id="btn-play">
           <svg viewBox="0 0 24 24" fill="currentColor" id="play-icon">
             <path d="M8 5v14l11-7z"/>
           </svg>
         </button>
-        <span class="btn-label">再生・停止</span>
       </div>
       <div class="action-btn-wrap">
+        <span class="btn-label">表示・非表示</span>
         <button class="action-btn active" id="btn-hud">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
             <circle cx="12" cy="12" r="3"/>
           </svg>
         </button>
-        <span class="btn-label">表示・非表示</span>
       </div>
       <div class="action-btn-wrap">
+        <span class="btn-label">自動運転</span>
         <button class="action-btn" id="btn-auto">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="11" width="18" height="7" rx="2"/>
@@ -268,18 +268,18 @@ input[type=range]::-moz-range-thumb { width:26px; height:26px; background:linear
             <circle cx="16.5" cy="15.5" r="1.5" fill="currentColor" stroke="none"/>
           </svg>
         </button>
-        <span class="btn-label">自動運転</span>
       </div>
       <div class="action-btn-wrap">
+        <span class="btn-label">音量設定</span>
         <button class="action-btn active" id="btn-sound">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M3 9v6h4l5 5V4L7 9H3z"/>
             <path d="M16.5 12A4.5 4.5 0 0014 7.97v8.06c1.48-.73 2.5-2.25 2.5-4.03z" opacity=".7"/>
           </svg>
         </button>
-        <span class="btn-label">音量設定</span>
       </div>
       <div class="action-btn-wrap">
+        <span class="btn-label">全画面</span>
         <button class="action-btn" id="btn-fs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M3 16v3a2 2 0 002 2h3"/>
@@ -512,7 +512,7 @@ let currentVolAdj = 1.0, baseVol = 70;
 let playlist = [{ id:'Uw5OLnN7UvM', type:'yt', name:'Bill Withers,Just The Two Of Us', color:null, rain:false, star:false, volAdj:1 }];
 let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null;
 
-const nowPlayingEl  = document.getElementById('now-playing2');
+const nowPlayingEl  = null; // now-playing2 removed
 const connectingEl  = connectBar;
 
 const decisionSE = new Audio('music/決定ボタンを押す7.mp3');
@@ -858,7 +858,6 @@ let cruiseSpeed=0;
 let displayMode=0; // 0=full, 1=hide hud
 
 // Sliders
-const lrSlider    = document.getElementById('lr-slider');
 const speedSlider = document.getElementById('speed-slider');
 const ytVolSlider  = document.getElementById('yt-vol2');
 const engVolSlider = document.getElementById('engine-vol2');
@@ -959,7 +958,7 @@ function applyDisplayMode(){
   connectBar.style.visibility=displayMode>=1?'hidden':'';
   trackBarEl.style.visibility=displayMode>=2?'hidden':'';
   hudEl.style.visibility=displayMode>=3?'hidden':'';
-  btnHud.classList.toggle('active',displayMode===0);
+  btnHud.classList.toggle('active',displayMode<3); // lit until all 3 hidden
 }
 btnHud.addEventListener('click',()=>{
   displayMode=(displayMode+1)%4; // 0→1→2→3→0
@@ -973,10 +972,7 @@ btnAuto.addEventListener('click',()=>{
 });
 
 btnSoundBtn.addEventListener('click',()=>{
-  soundPanel.style.display='flex';
-});
-document.getElementById('sound-close').addEventListener('click',()=>{
-  soundPanel.style.display='none';
+  soundPanel.style.display=soundPanel.style.display==='flex'?'none':'flex';
 });
 
 btnFs.addEventListener('click',()=>{
@@ -1014,13 +1010,6 @@ function updateMovement(dt){
 
   // Left-right slider: rate-based steering (right slider = right turn = decrease yaw)
   // Max 2.2 rad/s → full U-turn in ~1.4s
-  const raw = +lrSlider.value / 100; // -1 to 1
-  const _sc = [[0,0],[.1,.03],[.2,.07],[.3,.12],[.4,.18],[.5,.25],[.6,.35],[.7,.50],[.8,.68],[.9,.88],[1,1]];
-  const _ax = Math.min(1, Math.abs(raw));
-  let _sv = 1;
-  for(let i=0;i<_sc.length-1;i++){if(_ax<=_sc[i+1][0]){const t=(_ax-_sc[i][0])/(_sc[i+1][0]-_sc[i][0]);_sv=_sc[i][1]+t*(_sc[i+1][1]-_sc[i][1]);break;}}
-  const steerVal = Math.sign(raw) * _sv;
-  yaw += -steerVal * 2.2 * dt;
 
   const effYaw=getEffectiveYaw();
   updateCruiseBgm();
