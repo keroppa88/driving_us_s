@@ -109,7 +109,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 /* D-pad housing */
 #dpad-housing {
   align-self:center; height:75%; aspect-ratio:1; flex-shrink:0; max-width:210px;
-  background:transparent; border-radius:0; padding:0; box-shadow:none;
+  background:none; border:none; padding:0; box-shadow:none; border-radius:0;
 }
 #dpad { width:100%; height:100%; display:grid; grid-template-columns:1fr 1.1fr 1fr; grid-template-rows:1fr 1.1fr 1fr; gap:2px; }
 .dpad-btn {
@@ -510,7 +510,7 @@ function updateCruiseBgm() { playBgm(cruiseSpeed > 14 ? 'freeway2' : 'freeway1')
 let ytPlayer = null, ytReady = false;
 let currentVolAdj = 1.0, baseVol = 70;
 let playlist = [{ id:'Uw5OLnN7UvM', type:'yt', name:'Bill Withers,Just The Two Of Us', color:null, rain:false, star:false, volAdj:1 }];
-let playlistIdx = 0, isBrowsing = false, selectDebounce = null;
+let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null;
 
 const nowPlayingEl  = document.getElementById('now-playing2');
 const connectingEl  = connectBar;
@@ -542,11 +542,8 @@ function trackLabel(e) {
 }
 
 function selectTrack(delta) {
-  if(displayMode===1){
-    displayMode=0;
-    hudEl.style.visibility=''; trackBarEl.style.visibility=''; connectBar.style.visibility='';
-    btnHud.classList.add('active');
-  }
+  if(trackLoading) return; // block while confirmed track is still loading
+  if(displayMode>0){ displayMode=0; applyDisplayMode(); }
   if(!playlist.length) return;
   playlistIdx=((playlistIdx+delta)%playlist.length+playlist.length)%playlist.length;
   const e=playlist[playlistIdx]; isBrowsing=(e.type!=='label');
@@ -559,7 +556,9 @@ function confirmTrack() {
   if(!isBrowsing) return;
   if(musicPlaying) return;
   isBrowsing=false;
-  const e=playlist[playlistIdx];
+  trackLoading=true;
+  playingIdx=playlistIdx; // lock in the confirmed track
+  const e=playlist[playingIdx];
   decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
   connectingEl.style.display='block';
   connectingEl.textContent=`${trackLabel(e)}　接続中・・・`;
@@ -572,6 +571,7 @@ function confirmTrack() {
   if(nowPlayingEl) nowPlayingEl.textContent=`▶  ${trackLabel(e)}`;
   if(e.type==='radio'){ if(ytReady&&ytPlayer) ytPlayer.stopVideo(); playRadio(e.id); }
   else { stopRadio(); if(ytReady&&ytPlayer) ytPlayer.loadVideoById(e.id); }
+  // playingIdx is now set; browsing is blocked until trackLoading clears
 }
 
 function applyVolAdj() {
@@ -607,9 +607,9 @@ async function initYTPlayer() {
         events:{
           onReady:e=>{ytReady=true;res(e.target);},
           onStateChange:e=>{
-            if(e.data===1){const lbl=trackLabel(playlist[playlistIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;isBrowsing=false;applyVolAdj();setMusicBtn(true);}
-            if(e.data===2){setMusicBtn(false);} // paused
-            if(e.data===0){currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);setMusicBtn(false);clearNowPlaying();}
+            if(e.data===1){trackLoading=false;const lbl=trackLabel(playlist[playingIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;isBrowsing=false;applyVolAdj();setMusicBtn(true);}
+            if(e.data===2){trackLoading=false;setMusicBtn(false);}
+            if(e.data===0){trackLoading=false;currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);setMusicBtn(false);clearNowPlaying();}
           },
           onError:e=>rej(e.data),
         }
@@ -630,7 +630,7 @@ function playRadio(url){
   radioActive=true;
 }
 function stopRadio(){if(radioHls){radioHls.destroy();radioHls=null;}radioAudio.pause();radioAudio.src='';radioActive=false;}
-radioAudio.addEventListener('playing',()=>{const lbl=trackLabel(playlist[playlistIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;setMusicBtn(true);});
+radioAudio.addEventListener('playing',()=>{trackLoading=false;const lbl=trackLabel(playlist[playingIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;setMusicBtn(true);});
 radioAudio.addEventListener('pause', ()=>setMusicBtn(false));
 radioAudio.addEventListener('ended',()=>{setMusicBtn(false);clearNowPlaying();});
 
@@ -943,6 +943,7 @@ function setMusicBtn(playing){
 btnPlay.addEventListener('click',()=>{
   // Stop always takes priority
   if(musicPlaying){
+    trackLoading=false;
     if(radioActive){ radioAudio.pause(); return; }
     if(ytReady&&ytPlayer){ ytPlayer.pauseVideo(); return; }
     return;
@@ -954,13 +955,15 @@ btnPlay.addEventListener('click',()=>{
   ytPlayer.playVideo();
 });
 
-btnHud.addEventListener('click',()=>{
-  displayMode=(displayMode+1)%2;
-  const hide=displayMode===1;
-  hudEl.style.visibility=hide?'hidden':'';
-  trackBarEl.style.visibility=hide?'hidden':'';
-  connectBar.style.visibility=hide?'hidden':'';
+function applyDisplayMode(){
+  connectBar.style.visibility=displayMode>=1?'hidden':'';
+  trackBarEl.style.visibility=displayMode>=2?'hidden':'';
+  hudEl.style.visibility=displayMode>=3?'hidden':'';
   btnHud.classList.toggle('active',displayMode===0);
+}
+btnHud.addEventListener('click',()=>{
+  displayMode=(displayMode+1)%4; // 0→1→2→3→0
+  applyDisplayMode();
 });
 
 btnAuto.addEventListener('click',()=>{
