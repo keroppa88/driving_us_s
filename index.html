@@ -23,7 +23,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 
 /* ── Screen wrapper ── */
 #screen-wrapper {
-  flex: 0 0 61%;
+  flex: 0 0 54%;
   background: #1e1e1e;
   border-radius: 14px;
   padding: 7px;
@@ -101,11 +101,11 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 
 /* ── Controls area ── */
 #controls { flex:1; display:flex; flex-direction:column; gap:8px; }
-#controls-mid { flex:1; display:flex; align-items:center; gap:8px; }
+#controls-mid { flex:1; display:flex; align-items:stretch; gap:8px; }
 
 /* D-pad housing */
 #dpad-housing {
-  width:clamp(88px,30%,122px); aspect-ratio:1; flex-shrink:0;
+  align-self:stretch; aspect-ratio:1; flex-shrink:0; max-width:210px;
   background:linear-gradient(145deg,#2e2e2e,#1a1a1a);
   border-radius:18px; padding:9%;
   box-shadow: 3px 3px 8px rgba(0,0,0,.6), -1px -1px 4px rgba(255,255,255,.12), inset 1px 1px 3px rgba(255,255,255,.08);
@@ -118,7 +118,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
   box-shadow:1px 1px 3px rgba(0,0,0,.5), -1px -1px 2px rgba(255,255,255,.08);
 }
 .dpad-btn.pressed, .dpad-btn:active { background:linear-gradient(145deg,#111,#2a2a2a); box-shadow:inset 2px 2px 5px rgba(0,0,0,.7); }
-.dpad-arrow { color:#888; font-size:clamp(8px,2.5vw,12px); pointer-events:none; }
+.dpad-arrow { color:#888; font-size:clamp(11px,3.5vw,18px); pointer-events:none; }
 #dpad-up     { grid-area:1/2; border-radius:5px 5px 2px 2px; }
 #dpad-left   { grid-area:2/1; border-radius:5px 2px 2px 5px; }
 #dpad-center { grid-area:2/2; border-radius:4px; background:#1a1a1a; }
@@ -253,10 +253,9 @@ input[type=range]::-moz-range-thumb { width:26px; height:26px; background:linear
     <!-- Bottom buttons -->
     <div id="buttons-row">
       <div class="action-btn-wrap">
-        <button class="action-btn active" id="btn-play">
+        <button class="action-btn" id="btn-play">
           <svg viewBox="0 0 24 24" fill="currentColor" id="play-icon">
-            <rect x="6"  y="5" width="4" height="14" rx="1"/>
-            <rect x="14" y="5" width="4" height="14" rx="1"/>
+            <path d="M8 5v14l11-7z"/>
           </svg>
         </button>
         <span class="btn-label">再生・停止</span>
@@ -613,8 +612,9 @@ async function initYTPlayer() {
         events:{
           onReady:e=>{ytReady=true;res(e.target);},
           onStateChange:e=>{
-            if(e.data===1){connectingEl.textContent=trackLabel(playlist[playlistIdx]);isBrowsing=false;applyVolAdj();}
-            if(e.data===0){currentVolAdj=1;[ytVolSlider,ytVol2Slider].forEach(s=>{s.value=baseVol;});ytPlayer.setVolume(baseVol);}
+            if(e.data===1){connectingEl.textContent=trackLabel(playlist[playlistIdx]);isBrowsing=false;applyVolAdj();setMusicBtn(true);}
+            if(e.data===2){setMusicBtn(false);} // paused
+            if(e.data===0){currentVolAdj=1;[ytVolSlider,ytVol2Slider].forEach(s=>{s.value=baseVol;});ytPlayer.setVolume(baseVol);setMusicBtn(false);}
           },
           onError:e=>rej(e.data),
         }
@@ -635,7 +635,9 @@ function playRadio(url){
   radioActive=true;
 }
 function stopRadio(){if(radioHls){radioHls.destroy();radioHls=null;}radioAudio.pause();radioAudio.src='';radioActive=false;}
-radioAudio.addEventListener('playing',()=>{connectingEl.textContent=trackLabel(playlist[playlistIdx]);});
+radioAudio.addEventListener('playing',()=>{connectingEl.textContent=trackLabel(playlist[playlistIdx]);setMusicBtn(true);});
+radioAudio.addEventListener('pause', ()=>setMusicBtn(false));
+radioAudio.addEventListener('ended',()=>setMusicBtn(false));
 
 // ─────────────────────────────────────────────
 //  SPECIAL MODELS (loop sequence)
@@ -855,7 +857,7 @@ loadPlaylist().then(()=>initYTPlayer()).catch(console.error);
 //  MOBILE INPUT STATE
 // ─────────────────────────────────────────────
 let yaw=0, pitch=0, pitchShake=0, shakePhase=0, shakeT0=performance.now();
-let tiltBias=0, lrBias=0;
+let tiltBias=0;
 let touchActive=false, touchLastX=0, touchLastY=0;
 let gameActive=false, autoPilot=false;
 let cruiseSpeed=0;
@@ -869,7 +871,7 @@ const ytVol2Slider= document.getElementById('yt-vol2');
 const engVolSlider= document.getElementById('engine-vol');
 const engVol2Slider=document.getElementById('engine-vol2');
 
-lrSlider.addEventListener('input',e=>{ lrBias=+e.target.value/100*0.28; });
+// lrSlider value is read each frame in the animation loop (rate-based steering)
 speedSlider.addEventListener('input',e=>{ if(gameActive) cruiseSpeed=+e.target.value/100*MAX_CRUISE; });
 
 engVolSlider.addEventListener('input',e=>{
@@ -894,7 +896,8 @@ ytVol2Slider.addEventListener('input',e=>{
 // Device orientation
 let orientReady=false;
 function startOrientation(){
-  window.addEventListener('deviceorientation',e=>{ if(e.gamma!=null) tiltBias=Math.max(-1,Math.min(1,e.gamma/40))*0.35; });
+  // gamma > 0 = phone tilted right → decrease yaw = turn right
+  window.addEventListener('deviceorientation',e=>{ if(e.gamma!=null) tiltBias=-Math.max(-1,Math.min(1,e.gamma/40))*0.35; });
   orientReady=true;
 }
 
@@ -950,18 +953,27 @@ const btnAuto  =document.getElementById('btn-auto');
 const btnSoundBtn=document.getElementById('btn-sound');
 const btnFs    =document.getElementById('btn-fs');
 
+// Music play state (independent of engine BGM)
+let musicPlaying=false;
+function setMusicBtn(playing){
+  musicPlaying=playing;
+  btnPlay.classList.toggle('active',playing);
+  document.getElementById('play-icon').innerHTML=playing
+    ?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
+    :'<path d="M8 5v14l11-7z"/>';
+}
+
 btnPlay.addEventListener('click',()=>{
-  if(!gameActive) return;
-  const paused = !btnPlay.classList.contains('active');
-  btnPlay.classList.toggle('active');
-  if(paused){
-    if(pauseStartTime!==null){totalPausedMs+=performance.now()-pauseStartTime;pauseStartTime=null;}
-    document.getElementById('play-icon').innerHTML='<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
-  } else {
-    pauseStartTime=performance.now();
-    cruiseSpeed=0; speedSlider.value=0;
-    document.getElementById('play-icon').innerHTML='<path d="M8 5v14l11-7z"/>';
+  if(radioActive){
+    radioAudio.paused ? radioAudio.play().catch(console.error) : radioAudio.pause();
+    return; // state update fires via radioAudio events below
   }
+  if(!ytReady||!ytPlayer){
+    // No player yet – confirm current track to load+play
+    if(isBrowsing) confirmTrack();
+    return;
+  }
+  ytPlayer.getPlayerState()===1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
 });
 
 btnHud.addEventListener('click',()=>{
@@ -1002,9 +1014,7 @@ startBtn.addEventListener('click',()=>{
     resetTrafficCars();
   }
   startOverlay.style.display='none';
-  btnPlay.classList.add('active');
-  document.getElementById('play-icon').innerHTML='<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
-  playBgm('freeway1');
+  playBgm('freeway1'); // engine BGM always on
   loadHeavyModels();
   // Request orientation permission on iOS
   if(!orientReady){
@@ -1025,14 +1035,15 @@ if(typeof DeviceOrientationEvent==='undefined'||typeof DeviceOrientationEvent.re
 let lastT=performance.now();
 const _fVec=new THREE.Vector3(), _rVec=new THREE.Vector3();
 
-function getEffectiveYaw(){ return yaw+tiltBias+lrBias; }
+function getEffectiveYaw(){ return yaw+tiltBias; }
 
 function updateMovement(dt){
   if(!gameActive) return;
 
-  // Pause check
-  const isPaused = !btnPlay.classList.contains('active');
-  if(isPaused) return;
+  // Left-right slider: rate-based steering (right slider = right turn = decrease yaw)
+  // Max 2.2 rad/s → full U-turn in ~1.4s
+  const steerVal = +lrSlider.value / 100; // -1 to 1
+  yaw += -steerVal * 2.2 * dt;
 
   const effYaw=getEffectiveYaw();
   updateCruiseBgm();
