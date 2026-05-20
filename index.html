@@ -604,7 +604,7 @@ async function initYTPlayer() {
           onStateChange:e=>{
             if(e.data===1){connectingEl.textContent=trackLabel(playlist[playlistIdx]);isBrowsing=false;applyVolAdj();setMusicBtn(true);}
             if(e.data===2){setMusicBtn(false);} // paused
-            if(e.data===0){currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);setMusicBtn(false);}
+            if(e.data===0){currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);setMusicBtn(false);clearNowPlaying();}
           },
           onError:e=>rej(e.data),
         }
@@ -627,7 +627,7 @@ function playRadio(url){
 function stopRadio(){if(radioHls){radioHls.destroy();radioHls=null;}radioAudio.pause();radioAudio.src='';radioActive=false;}
 radioAudio.addEventListener('playing',()=>{connectingEl.textContent=trackLabel(playlist[playlistIdx]);setMusicBtn(true);});
 radioAudio.addEventListener('pause', ()=>setMusicBtn(false));
-radioAudio.addEventListener('ended',()=>setMusicBtn(false));
+radioAudio.addEventListener('ended',()=>{setMusicBtn(false);clearNowPlaying();});
 
 // ─────────────────────────────────────────────
 //  SPECIAL MODELS (loop sequence)
@@ -923,6 +923,10 @@ const btnFs    =document.getElementById('btn-fs');
 
 // Music play state (independent of engine BGM)
 let musicPlaying=false;
+function clearNowPlaying(){
+  trackBarEl.textContent='';
+  connectBar.style.display='none';
+}
 function setMusicBtn(playing){
   musicPlaying=playing;
   btnPlay.classList.toggle('active',!playing);
