@@ -70,17 +70,17 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 }
 #loading-screen { background:rgba(10,20,10,.95); color:#8dc88d; font-size:clamp(9px,2.5vw,13px); gap:8px; }
 #start-overlay  { background:rgba(8,15,8,.92); color:#aadaaa; gap:7px; }
-#start-overlay h1 { font-size:clamp(11px,3vw,16px); color:#c8e8c8; letter-spacing:.05em; text-align:center; margin-bottom:2px; }
+#start-overlay h1 { font-size:clamp(22px,6vw,32px); color:#c8e8c8; letter-spacing:.05em; text-align:center; margin-bottom:2px; }
 #start-overlay .ctrl-hint { font-size:clamp(6px,1.6vw,8.5px); color:#669966; text-align:center; line-height:1.6; }
 .vol-row-sm { display:flex; align-items:center; gap:6px; width:100%; }
 .vol-row-sm label { font-size:clamp(6px,1.5vw,8px); color:#88aa88; min-width:4em; text-align:right; }
 .vol-row-sm input[type=range] { flex:1; accent-color:#6a8; height:14px; cursor:pointer; }
 .vol-row-sm span { font-size:clamp(6px,1.5vw,8px); color:#99bb99; min-width:2.5em; }
-#audio-load-msg { font-size:clamp(6px,1.5vw,8px); color:#557755; text-align:center; }
+#audio-load-msg { font-size:clamp(12px,3vw,16px); color:#557755; text-align:center; }
 #start-btn {
   margin-top:4px; padding:6px 18px;
   background:transparent; color:#aaddaa; border:1px solid #446644;
-  font-family:inherit; font-size:clamp(9px,2.3vw,13px); cursor:pointer; letter-spacing:.05em;
+  font-family:inherit; font-size:clamp(18px,4.6vw,26px); cursor:pointer; letter-spacing:.05em;
   border-radius:4px;
 }
 #start-btn:disabled { opacity:.4; cursor:default; }
@@ -111,7 +111,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
   align-self:center; height:75%; aspect-ratio:1; flex-shrink:0; max-width:210px;
   background:linear-gradient(160deg,#d4cfb8 0%,#c4bfa8 60%,#b8b39e 100%);
   border-radius:18px; padding:9%;
-  box-shadow: inset 4px 4px 12px rgba(0,0,0,.5), inset -2px -2px 6px rgba(255,255,255,.2);
+  box-shadow:4px 4px 10px rgba(0,0,0,.68), -1px -1px 4px rgba(255,255,255,.18), inset 1px 1px 3px rgba(255,255,255,.1);
 }
 #dpad { width:100%; height:100%; display:grid; grid-template-columns:1fr 1.1fr 1fr; grid-template-rows:1fr 1.1fr 1fr; gap:2px; }
 .dpad-btn {
@@ -936,20 +936,24 @@ function clearNowPlaying(){
 }
 function setMusicBtn(playing){
   musicPlaying=playing;
-  btnPlay.classList.toggle('active',!playing);
+  btnPlay.classList.add('active'); // always lit
   document.getElementById('play-icon').innerHTML=playing
     ?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
     :'<path d="M8 5v14l11-7z"/>';
 }
 
 btnPlay.addEventListener('click',()=>{
-  if(isBrowsing){ confirmTrack(); return; }
-  if(radioActive){
-    radioAudio.paused ? radioAudio.play().catch(console.error) : radioAudio.pause();
+  // Stop always takes priority
+  if(musicPlaying){
+    if(radioActive){ radioAudio.pause(); return; }
+    if(ytReady&&ytPlayer){ ytPlayer.pauseVideo(); return; }
     return;
   }
+  // Stopped: confirm browsed track or resume
+  if(isBrowsing){ confirmTrack(); return; }
+  if(radioActive){ radioAudio.play().catch(console.error); return; }
   if(!ytReady||!ytPlayer) return;
-  ytPlayer.getPlayerState()===1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
+  ytPlayer.playVideo();
 });
 
 btnHud.addEventListener('click',()=>{
