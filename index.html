@@ -602,7 +602,7 @@ async function initYTPlayer() {
         events:{
           onReady:e=>{ytReady=true;res(e.target);},
           onStateChange:e=>{
-            if(e.data===1){connectingEl.textContent=trackLabel(playlist[playlistIdx]);isBrowsing=false;applyVolAdj();setMusicBtn(true);}
+            if(e.data===1){const lbl=trackLabel(playlist[playlistIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;isBrowsing=false;applyVolAdj();setMusicBtn(true);}
             if(e.data===2){setMusicBtn(false);} // paused
             if(e.data===0){currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);setMusicBtn(false);clearNowPlaying();}
           },
@@ -625,7 +625,7 @@ function playRadio(url){
   radioActive=true;
 }
 function stopRadio(){if(radioHls){radioHls.destroy();radioHls=null;}radioAudio.pause();radioAudio.src='';radioActive=false;}
-radioAudio.addEventListener('playing',()=>{connectingEl.textContent=trackLabel(playlist[playlistIdx]);setMusicBtn(true);});
+radioAudio.addEventListener('playing',()=>{const lbl=trackLabel(playlist[playlistIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;setMusicBtn(true);});
 radioAudio.addEventListener('pause', ()=>setMusicBtn(false));
 radioAudio.addEventListener('ended',()=>{setMusicBtn(false);clearNowPlaying();});
 
