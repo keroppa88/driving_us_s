@@ -109,9 +109,7 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 /* D-pad housing */
 #dpad-housing {
   align-self:center; height:75%; aspect-ratio:1; flex-shrink:0; max-width:210px;
-  background:linear-gradient(160deg,#d4cfb8 0%,#c4bfa8 60%,#b8b39e 100%);
-  border-radius:18px; padding:9%;
-  box-shadow:4px 4px 10px rgba(0,0,0,.68), -1px -1px 4px rgba(255,255,255,.18), inset 1px 1px 3px rgba(255,255,255,.1);
+  background:none; border:none; padding:0; box-shadow:none; border-radius:0;
 }
 #dpad { width:100%; height:100%; display:grid; grid-template-columns:1fr 1.1fr 1fr; grid-template-rows:1fr 1.1fr 1fr; gap:2px; }
 .dpad-btn {
@@ -512,7 +510,7 @@ function updateCruiseBgm() { playBgm(cruiseSpeed > 14 ? 'freeway2' : 'freeway1')
 let ytPlayer = null, ytReady = false;
 let currentVolAdj = 1.0, baseVol = 70;
 let playlist = [{ id:'Uw5OLnN7UvM', type:'yt', name:'Bill Withers,Just The Two Of Us', color:null, rain:false, star:false, volAdj:1 }];
-let playlistIdx = 0, isBrowsing = false, selectDebounce = null;
+let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null;
 
 const nowPlayingEl  = document.getElementById('now-playing2');
 const connectingEl  = connectBar;
@@ -544,11 +542,8 @@ function trackLabel(e) {
 }
 
 function selectTrack(delta) {
-  if(displayMode===1){
-    displayMode=0;
-    hudEl.style.visibility=''; trackBarEl.style.visibility=''; connectBar.style.visibility='';
-    btnHud.classList.add('active');
-  }
+  if(trackLoading) return; // block while confirmed track is still loading
+  if(displayMode>0){ displayMode=0; applyDisplayMode(); }
   if(!playlist.length) return;
   playlistIdx=((playlistIdx+delta)%playlist.length+playlist.length)%playlist.length;
   const e=playlist[playlistIdx]; isBrowsing=(e.type!=='label');
@@ -561,7 +556,9 @@ function confirmTrack() {
   if(!isBrowsing) return;
   if(musicPlaying) return;
   isBrowsing=false;
-  const e=playlist[playlistIdx];
+  trackLoading=true;
+  playingIdx=playlistIdx; // lock in the confirmed track
+  const e=playlist[playingIdx];
   decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
   connectingEl.style.display='block';
   connectingEl.textContent=`${trackLabel(e)}　接続中・・・`;
@@ -574,6 +571,7 @@ function confirmTrack() {
   if(nowPlayingEl) nowPlayingEl.textContent=`▶  ${trackLabel(e)}`;
   if(e.type==='radio'){ if(ytReady&&ytPlayer) ytPlayer.stopVideo(); playRadio(e.id); }
   else { stopRadio(); if(ytReady&&ytPlayer) ytPlayer.loadVideoById(e.id); }
+  // playingIdx is now set; browsing is blocked until trackLoading clears
 }
 
 function applyVolAdj() {
@@ -609,9 +607,9 @@ async function initYTPlayer() {
         events:{
           onReady:e=>{ytReady=true;res(e.target);},
           onStateChange:e=>{
-            if(e.data===1){const lbl=trackLabel(playlist[playlistIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;isBrowsing=false;applyVolAdj();setMusicBtn(true);}
-            if(e.data===2){setMusicBtn(false);} // paused
-            if(e.data===0){currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);setMusicBtn(false);clearNowPlaying();}
+            if(e.data===1){trackLoading=false;const lbl=trackLabel(playlist[playingIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;isBrowsing=false;applyVolAdj();setMusicBtn(true);}
+            if(e.data===2){trackLoading=false;setMusicBtn(false);}
+            if(e.data===0){trackLoading=false;currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);setMusicBtn(false);clearNowPlaying();}
           },
           onError:e=>rej(e.data),
         }
@@ -632,7 +630,7 @@ function playRadio(url){
   radioActive=true;
 }
 function stopRadio(){if(radioHls){radioHls.destroy();radioHls=null;}radioAudio.pause();radioAudio.src='';radioActive=false;}
-radioAudio.addEventListener('playing',()=>{const lbl=trackLabel(playlist[playlistIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;setMusicBtn(true);});
+radioAudio.addEventListener('playing',()=>{trackLoading=false;const lbl=trackLabel(playlist[playingIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;setMusicBtn(true);});
 radioAudio.addEventListener('pause', ()=>setMusicBtn(false));
 radioAudio.addEventListener('ended',()=>{setMusicBtn(false);clearNowPlaying();});
 
@@ -945,6 +943,7 @@ function setMusicBtn(playing){
 btnPlay.addEventListener('click',()=>{
   // Stop always takes priority
   if(musicPlaying){
+    trackLoading=false;
     if(radioActive){ radioAudio.pause(); return; }
     if(ytReady&&ytPlayer){ ytPlayer.pauseVideo(); return; }
     return;
@@ -956,13 +955,15 @@ btnPlay.addEventListener('click',()=>{
   ytPlayer.playVideo();
 });
 
-btnHud.addEventListener('click',()=>{
-  displayMode=(displayMode+1)%2;
-  const hide=displayMode===1;
-  hudEl.style.visibility=hide?'hidden':'';
-  trackBarEl.style.visibility=hide?'hidden':'';
-  connectBar.style.visibility=hide?'hidden':'';
+function applyDisplayMode(){
+  connectBar.style.visibility=displayMode>=1?'hidden':'';
+  trackBarEl.style.visibility=displayMode>=2?'hidden':'';
+  hudEl.style.visibility=displayMode>=3?'hidden':'';
   btnHud.classList.toggle('active',displayMode===0);
+}
+btnHud.addEventListener('click',()=>{
+  displayMode=(displayMode+1)%4; // 0→1→2→3→0
+  applyDisplayMode();
 });
 
 btnAuto.addEventListener('click',()=>{
@@ -1013,7 +1014,12 @@ function updateMovement(dt){
 
   // Left-right slider: rate-based steering (right slider = right turn = decrease yaw)
   // Max 2.2 rad/s → full U-turn in ~1.4s
-  const steerVal = +lrSlider.value / 100; // -1 to 1
+  const raw = +lrSlider.value / 100; // -1 to 1
+  const _sc = [[0,0],[.1,.03],[.2,.07],[.3,.12],[.4,.18],[.5,.25],[.6,.35],[.7,.50],[.8,.68],[.9,.88],[1,1]];
+  const _ax = Math.min(1, Math.abs(raw));
+  let _sv = 1;
+  for(let i=0;i<_sc.length-1;i++){if(_ax<=_sc[i+1][0]){const t=(_ax-_sc[i][0])/(_sc[i+1][0]-_sc[i][0]);_sv=_sc[i][1]+t*(_sc[i+1][1]-_sc[i][1]);break;}}
+  const steerVal = Math.sign(raw) * _sv;
   yaw += -steerVal * 2.2 * dt;
 
   const effYaw=getEffectiveYaw();
