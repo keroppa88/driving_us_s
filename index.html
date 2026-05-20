@@ -3,16 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-store">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Driving in the USA</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
-html, body { width:100%; height:100%; overflow:hidden; background:#111; display:flex; justify-content:center; align-items:center; font-family:'Courier New',monospace; }
+html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; background:#111; display:flex; justify-content:center; align-items:center; font-family:'Courier New',monospace; }
 
 /* ── GameBoy body ── */
 #gameboy {
-  width:  min(100vw, calc(100vh * 0.565));
-  height: min(100vh, calc(100vw / 0.565));
+  width:  min(100vw, calc(100dvh * 0.565));
+  height: min(100dvh, calc(100vw / 0.565));
   background: linear-gradient(160deg, #d4cfb8 0%, #c4bfa8 60%, #b8b39e 100%);
   border-radius: 22px;
   box-shadow: inset 2px 3px 10px rgba(255,255,255,.55), inset -2px -3px 8px rgba(0,0,0,.25), 6px 10px 28px rgba(0,0,0,.65);
