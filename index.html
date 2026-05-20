@@ -600,7 +600,7 @@ function applyVolAdj() {
   radioAudio.volume=v/100;
 }
 
-function seekYT(sec) { if(ytReady&&ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+sec,true); }
+function seekYT(sec) { if(!musicPlaying) return; if(ytReady&&ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+sec,true); }
 function toggleYt() {
   if(radioActive){ radioAudio.paused?radioAudio.play().catch(console.error):radioAudio.pause(); return; }
   if(!ytReady||!ytPlayer) return;
