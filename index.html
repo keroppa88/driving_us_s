@@ -109,9 +109,9 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 /* D-pad housing */
 #dpad-housing {
   align-self:center; height:75%; aspect-ratio:1; flex-shrink:0; max-width:210px;
-  background:linear-gradient(160deg,#c0bba4 0%,#b0ab94 60%,#a8a38a 100%);
+  background:linear-gradient(160deg,#d4cfb8 0%,#c4bfa8 60%,#b8b39e 100%);
   border-radius:18px; padding:9%;
-  box-shadow: 3px 3px 8px rgba(0,0,0,.4), -1px -1px 4px rgba(255,255,255,.25), inset 1px 1px 3px rgba(255,255,255,.15);
+  box-shadow: inset 4px 4px 12px rgba(0,0,0,.5), inset -2px -2px 6px rgba(255,255,255,.2);
 }
 #dpad { width:100%; height:100%; display:grid; grid-template-columns:1fr 1.1fr 1fr; grid-template-rows:1fr 1.1fr 1fr; gap:2px; }
 .dpad-btn {
@@ -544,6 +544,11 @@ function trackLabel(e) {
 }
 
 function selectTrack(delta) {
+  if(displayMode===1){
+    displayMode=0;
+    hudEl.style.visibility=''; trackBarEl.style.visibility=''; connectBar.style.visibility='';
+    btnHud.classList.add('active');
+  }
   if(!playlist.length) return;
   playlistIdx=((playlistIdx+delta)%playlist.length+playlist.length)%playlist.length;
   const e=playlist[playlistIdx]; isBrowsing=(e.type!=='label');
