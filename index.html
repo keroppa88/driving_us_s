@@ -1014,7 +1014,7 @@ function updateMovement(dt){
   // Left-right slider: rate-based steering (right slider = right turn = decrease yaw)
   // Max 2.2 rad/s → full U-turn in ~1.4s
   const raw = +lrSlider.value / 100; // -1 to 1, linear
-  const steerVal = Math.sign(raw) * Math.pow(Math.abs(raw), 2.5); // exponential: slow near center, fast near edges
+  const steerVal = Math.sign(raw) * Math.pow(Math.abs(raw), 1.74); // 50% position → ~30% of max speed
   yaw += -steerVal * 2.2 * dt;
 
   const effYaw=getEffectiveYaw();
