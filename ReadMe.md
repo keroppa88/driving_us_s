@@ -1,4 +1,7 @@
-# Driving in the USA
+# Driving in the USA　スマホバージョン
+
+> <img width="586" height="958" alt="image" src="https://github.com/user-attachments/assets/e94689e5-c268-4770-8488-5df23c3890d7" />
+
 > <img width="300" height="210" alt="image" src="https://github.com/user-attachments/assets/74440051-63fe-4233-81cd-393cf6f773d9" />
 
 > <img width="300" height="250" alt="image" src="https://github.com/user-attachments/assets/1621a1ed-93d1-4468-9b0c-4d622bccf20f" />
@@ -14,10 +17,6 @@
 * https://www.youtube.com/watch?v=XTYLsULsefs&list=RDXTYLsULsefs&start_radio=1
 > （↑※シェルタリングスカイの砂漠は北アフリカ）
 * https://www.youtube.com/watch?v=oCLpLWcX2cg&list=RDoCLpLWcX2cg&start_radio=1
-
-### PC専用、スマホ非対応
-* PC専用。ゲームコントローラー使用可能。
-* スマホ適応するとボタン配置が必要で没入が妨げられるし、何分もスマホ構えてプレイするようなゲームではないのでスマホは切り捨てる。
 
 ## 内容・制作情報
 
@@ -95,32 +94,9 @@
 ## 操作
 * 運転といっても直線道路をフラフラするだけ。
 * 不要な場合はタイトル画面で□オートパイロットにチェック入れると自動運転になる。
-* このゲームは視点移動のためにマウス（カーソル）操作を占有する。
-  * 不要な場合はxボタンを押すとゲームWatchモードになる。
-    * ＝ゲーム進行しつつ、マウス（カーソル）解放。
 
-### キーボード:
-* Space       アクセル（押しっぱなし）
-* B           ブレーキ（押しっぱなし）
-* ↑↓          曲選択（musiclistを上下に移動）
-* ←→          YouTubeの巻き戻し／早送り（±10秒）
-* Y           曲を決定・再生 / 再生中は再生停止トグル
-* A           速度計・曲名表示、十字カーソル の 表示/非表示トグル
-* X　　　　　　画面Watch・カーソル解放
-* ESC         タイトル画面（ポインターロック解除）
 
-### ゲームパッド（Standard Mapping 準拠）:
-* RT(buttons[7])      アクセル
-* LT(buttons[6])      ブレーキ
-* Bボタン(buttons[1]) ブレーキ（LTと同じ）
-* Yボタン(buttons[3]) 決定・再生停止
-* Aボタン(buttons[0]) 表示/非表示トグル
-* Xボタン(buttons[2])　画面Watch・カーソル解放
-* 十字上(buttons[12]) 曲を上に選択
-* 十字下(buttons[13]) 曲を下に選択
-* 十字左(buttons[14]) 巻き戻し -10秒
-* 十字右(buttons[15]) 早送り +10秒
-* Selectボタン(buttons[8]) タイトル画面
+
 
 ## マップ
 
