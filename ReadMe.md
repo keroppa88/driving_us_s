@@ -80,6 +80,8 @@
 
 > <img width="300" height="255" alt="image" src="https://github.com/user-attachments/assets/f2beb8f8-d07c-4eea-8a6b-a3c9ef0b3951" />
 
+> <img width="300" height="200" alt="593546826-fcb7e5aa-028e-4746-9535-51f010ee789b" src="https://github.com/user-attachments/assets/a048a5e2-cbbb-401f-a75d-700254dce8a1" />
+ 
 ## インストール
 * ウェブのブラウザでプレイできる。
 * インストールしてmusiclistをいじれば誰でも好きな音楽ラインナップでゲームできる。
@@ -133,8 +135,7 @@
 |-----------|--------|
 | 3 | sa02 青い看板 |
 | 8 | sa03 黄色い看板 |
-| 17 | sa06 シェルガソリンスタンド |<img width="683" height="475" alt="593546826-fcb7e5aa-028e-4746-9535-51f010ee789b" src="https://github.com/user-attachments/assets/a048a5e2-cbbb-401f-a75d-700254dce8a1" />
-
+| 17 | sa06 シェルガソリンスタンド
 | 26 | sa03 黄色い看板 |
 | 35 | sa05 マルボロ看板 |
 | 44 | sa02 青い看板 |
