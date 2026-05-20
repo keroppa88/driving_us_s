@@ -548,7 +548,6 @@ function selectTrack(delta) {
   connectingEl.style.display='block';
   connectingEl.textContent=e.type==='label'?`── ${e.name} ──`:trackLabel(e);
   clearTimeout(selectDebounce);
-  if(isBrowsing&&!musicPlaying) selectDebounce=setTimeout(()=>{if(isBrowsing)confirmTrack();},1600);
 }
 
 function confirmTrack() {
@@ -937,15 +936,12 @@ function setMusicBtn(playing){
 }
 
 btnPlay.addEventListener('click',()=>{
+  if(isBrowsing){ confirmTrack(); return; }
   if(radioActive){
     radioAudio.paused ? radioAudio.play().catch(console.error) : radioAudio.pause();
-    return; // state update fires via radioAudio events below
-  }
-  if(!ytReady||!ytPlayer){
-    // No player yet – confirm current track to load+play
-    if(isBrowsing) confirmTrack();
     return;
   }
+  if(!ytReady||!ytPlayer) return;
   ytPlayer.getPlayerState()===1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
 });
 
