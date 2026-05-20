@@ -749,7 +749,7 @@ const trafficCars=[
   {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:1680000,lifetime:SAMEDIR_LIFETIME_MS,oncoming:false},
   {mesh:null,active:false,done:false,spawnElapsed:0,relDist:0,spawnAt:1800000,lifetime:SAMEDIR_LIFETIME_MS,oncoming:false},
 ];
-['car01.glb','car04.glb','car01.glb','car02.glb','car03.glb','car02.glb','car03.glb','car04.glb'].forEach((f,i)=>{
+['car01.glb','car04.glb','car01.glb','car02.glb','car03.glb','car02.glb','car06.glb','car05.glb'].forEach((f,i)=>{
   new GLTFLoader().load(f+'?v='+Date.now(),gltf=>{
     const m=gltf.scene;
     m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
