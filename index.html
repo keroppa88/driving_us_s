@@ -999,6 +999,7 @@ function exitScreenOnly(){
   if(fsState!==2) return;
   document.body.classList.remove('screen-only');
   fsState=0;
+  try{ screen.orientation.unlock(); }catch(_){}
   if(document.fullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen)?.call(document);}
   setTimeout(onResize,50);
   updateFsBtn();
@@ -1010,6 +1011,7 @@ btnFs.addEventListener('click',()=>{
   } else if(fsState===1){
     document.body.classList.add('screen-only');
     fsState=2;
+    try{ screen.orientation.lock('landscape').catch(()=>{}); }catch(_){}
     setTimeout(onResize,50);
   }
   updateFsBtn();
@@ -1018,17 +1020,18 @@ btnFs.addEventListener('click',()=>{
 wrapper.addEventListener('click',e=>{ if(fsState===2){e.preventDefault();e.stopPropagation();exitScreenOnly();} },true);
 wrapper.addEventListener('touchstart',e=>{ if(fsState===2){e.preventDefault();e.stopPropagation();exitScreenOnly();} },{capture:true,passive:false});
 // Sync state when user exits fullscreen via system gesture
-document.addEventListener('fullscreenchange',()=>{
+function onFsChange(){
   if(!document.fullscreenElement){
-    if(fsState===2) document.body.classList.remove('screen-only');
+    if(fsState===2){ document.body.classList.remove('screen-only'); try{screen.orientation.unlock();}catch(_){} }
     fsState=0;
     setTimeout(onResize,50);
+    updateFsBtn();
   }
-  updateFsBtn();
-});
+}
+document.addEventListener('fullscreenchange',onFsChange);
 document.addEventListener('webkitfullscreenchange',()=>{
   if(!document.fullscreenElement){
-    if(fsState===2) document.body.classList.remove('screen-only');
+    if(fsState===2){ document.body.classList.remove('screen-only'); try{screen.orientation.unlock();}catch(_){} }
     fsState=0;
     setTimeout(onResize,50);
   }
