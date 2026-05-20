@@ -240,7 +240,7 @@ input[type=range]::-moz-range-thumb { width:26px; height:26px; background:linear
     <!-- Bottom buttons -->
     <div id="buttons-row">
       <div class="action-btn-wrap">
-        <button class="action-btn" id="btn-play">
+        <button class="action-btn active" id="btn-play">
           <svg viewBox="0 0 24 24" fill="currentColor" id="play-icon">
             <path d="M8 5v14l11-7z"/>
           </svg>
@@ -539,18 +539,18 @@ function trackLabel(e) {
 }
 
 function selectTrack(delta) {
-  if(musicPlaying) return;
   if(!playlist.length) return;
   playlistIdx=((playlistIdx+delta)%playlist.length+playlist.length)%playlist.length;
   const e=playlist[playlistIdx]; isBrowsing=(e.type!=='label');
   connectingEl.style.display='block';
   connectingEl.textContent=e.type==='label'?`── ${e.name} ──`:trackLabel(e);
   clearTimeout(selectDebounce);
-  if(isBrowsing) selectDebounce=setTimeout(()=>{if(isBrowsing)confirmTrack();},1600);
+  if(isBrowsing&&!musicPlaying) selectDebounce=setTimeout(()=>{if(isBrowsing)confirmTrack();},1600);
 }
 
 function confirmTrack() {
   if(!isBrowsing) return;
+  if(musicPlaying) return;
   isBrowsing=false;
   const e=playlist[playlistIdx];
   decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
@@ -845,7 +845,6 @@ loadPlaylist().then(()=>initYTPlayer()).catch(console.error);
 //  MOBILE INPUT STATE
 // ─────────────────────────────────────────────
 let yaw=0, pitch=0, pitchShake=0, shakePhase=0, shakeT0=performance.now();
-let tiltBias=0;
 let touchActive=false, touchLastX=0, touchLastY=0;
 let gameActive=false, autoPilot=false;
 let cruiseSpeed=0;
@@ -867,14 +866,6 @@ engVolSlider.addEventListener('input',e=>{
 ytVolSlider.addEventListener('input',e=>{
   baseVol=parseInt(e.target.value); applyVolAdj();
 });
-
-// Device orientation
-let orientReady=false;
-function startOrientation(){
-  // gamma > 0 = phone tilted right → decrease yaw = turn right
-  window.addEventListener('deviceorientation',e=>{ if(e.gamma!=null) tiltBias=-Math.max(-1,Math.min(1,e.gamma/40))*0.35; });
-  orientReady=true;
-}
 
 // Touch drag on game screen → camera yaw/pitch
 wrapper.addEventListener('touchstart',e=>{
@@ -932,7 +923,7 @@ const btnFs    =document.getElementById('btn-fs');
 let musicPlaying=false;
 function setMusicBtn(playing){
   musicPlaying=playing;
-  btnPlay.classList.toggle('active',playing);
+  btnPlay.classList.toggle('active',!playing);
   document.getElementById('play-icon').innerHTML=playing
     ?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
     :'<path d="M8 5v14l11-7z"/>';
@@ -991,18 +982,7 @@ startBtn.addEventListener('click',()=>{
   startOverlay.style.display='none';
   playBgm('freeway1'); // engine BGM always on
   loadHeavyModels();
-  // Request orientation permission on iOS
-  if(!orientReady){
-    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
-      DeviceOrientationEvent.requestPermission().then(s=>{if(s==='granted')startOrientation();}).catch(()=>startOrientation());
-    } else { startOrientation(); }
-  }
 });
-
-// Auto-start orientation on non-iOS
-if(typeof DeviceOrientationEvent==='undefined'||typeof DeviceOrientationEvent.requestPermission!=='function'){
-  startOrientation();
-}
 
 // ─────────────────────────────────────────────
 //  ANIMATION LOOP
@@ -1010,7 +990,7 @@ if(typeof DeviceOrientationEvent==='undefined'||typeof DeviceOrientationEvent.re
 let lastT=performance.now();
 const _fVec=new THREE.Vector3(), _rVec=new THREE.Vector3();
 
-function getEffectiveYaw(){ return yaw+tiltBias; }
+function getEffectiveYaw(){ return yaw; }
 
 function updateMovement(dt){
   if(!gameActive) return;
