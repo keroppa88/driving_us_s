@@ -1,6 +1,6 @@
 # Driving in the USA　スマホバージョン
 
-> <img width="586" height="958" alt="image" src="https://github.com/user-attachments/assets/e94689e5-c268-4770-8488-5df23c3890d7" />
+> <img width="300" height="490" alt="image" src="https://github.com/user-attachments/assets/e94689e5-c268-4770-8488-5df23c3890d7" />
 
 > <img width="300" height="210" alt="image" src="https://github.com/user-attachments/assets/74440051-63fe-4233-81cd-393cf6f773d9" />
 
