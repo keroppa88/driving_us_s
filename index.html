@@ -143,13 +143,13 @@ html, body { width:100%; height:100%; overflow:hidden; background:#111; display:
 input[type=range] { width:100%; height:56px; -webkit-appearance:none; appearance:none; background:transparent; cursor:pointer; }
 input[type=range]::-webkit-slider-runnable-track { height:5px; background:linear-gradient(to right,#666,#888); border-radius:3px; box-shadow:inset 2px 2px 5px rgba(0,0,0,.6); }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance:none; width:16px; height:50px;
-  background:linear-gradient(160deg,#f0f0f0 0%,#e0e0e0 30%,#c8c8c8 60%,#a8a8a8 100%);
-  border-radius:5px; margin-top:-23px;
-  box-shadow:2px 2px 6px rgba(0,0,0,.5), -1px -1px 3px rgba(255,255,255,.9), inset 0 1px 3px rgba(255,255,255,.7);
+  -webkit-appearance:none; width:18px; height:52px;
+  background:repeating-linear-gradient(to bottom,#444 0px,#444 2px,#111 2px,#111 5px);
+  border-radius:3px; margin-top:-24px;
+  box-shadow:2px 2px 6px rgba(0,0,0,.7), -1px -1px 2px rgba(255,255,255,.15);
 }
 input[type=range]::-moz-range-track { height:5px; background:#777; border-radius:3px; }
-input[type=range]::-moz-range-thumb { width:16px; height:50px; background:linear-gradient(160deg,#f0f0f0,#c8c8c8,#a8a8a8); border-radius:5px; border:none; box-shadow:2px 2px 6px rgba(0,0,0,.5); }
+input[type=range]::-moz-range-thumb { width:18px; height:52px; background:repeating-linear-gradient(to bottom,#444 0px,#444 2px,#111 2px,#111 5px); border-radius:3px; border:none; box-shadow:2px 2px 6px rgba(0,0,0,.7); }
 .slider-label { text-align:center; font-size:clamp(7px,1.8vw,9px); color:#5a5848; letter-spacing:.05em; margin-top:4px; }
 
 /* Bottom buttons */
@@ -165,7 +165,7 @@ input[type=range]::-moz-range-thumb { width:16px; height:50px; background:linear
 .action-btn:active { box-shadow:inset 2px 2px 7px rgba(0,0,0,.7); transform:scale(.94); }
 .action-btn.active { color:#6aba6a; }
 .action-btn svg { width:44%; height:44%; }
-.btn-label { font-size:clamp(5.5px,1.5vw,8.5px); color:#5a5848; text-align:center; white-space:nowrap; }
+.btn-label { font-size:clamp(7px,1.95vw,11px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -289,7 +289,6 @@ input[type=range]::-moz-range-thumb { width:16px; height:50px; background:linear
             <path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M3 16v3a2 2 0 002 2h3"/>
           </svg>
         </button>
-        <span class="btn-label">全画面</span>
       </div>
     </div>
   </div>
@@ -979,14 +978,19 @@ btnSoundBtn.addEventListener('click',()=>{
   soundPanel.style.display=soundPanel.style.display==='flex'?'none':'flex';
 });
 
+function updateFsBtn(){
+  btnFs.classList.toggle('active',!document.fullscreenElement);
+}
 btnFs.addEventListener('click',()=>{
   if(!document.fullscreenElement){
     (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen)?.call(document.documentElement);
   } else {
     (document.exitFullscreen||document.webkitExitFullscreen)?.call(document);
   }
-  btnFs.classList.toggle('active');
 });
+document.addEventListener('fullscreenchange',updateFsBtn);
+document.addEventListener('webkitfullscreenchange',updateFsBtn);
+updateFsBtn();
 
 // DRIVE START
 startBtn.addEventListener('click',()=>{
