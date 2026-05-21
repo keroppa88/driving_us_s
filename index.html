@@ -270,7 +270,7 @@ body.screen-only #screen-wrapper::before { display:none; }
       </div>
       <div class="action-btn-wrap">
         <span class="btn-label" id="lbl-hud">非表示</span>
-        <button class="action-btn active" id="btn-hud">
+        <button class="action-btn" id="btn-hud">
           <svg id="hud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
             <circle cx="12" cy="12" r="3"/>
@@ -978,7 +978,7 @@ function applyDisplayMode(){
   connectBar.style.visibility=displayMode>=1?'hidden':'';
   trackBarEl.style.visibility=displayMode>=2?'hidden':'';
   hudEl.style.visibility=displayMode>=3?'hidden':'';
-  btnHud.classList.toggle('active',displayMode<3);
+  btnHud.classList.toggle('active',displayMode===3);
   const allHidden=displayMode===3;
   document.getElementById('lbl-hud').textContent=allHidden?'表示':'非表示';
   document.getElementById('hud-icon').innerHTML=allHidden
