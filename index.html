@@ -158,7 +158,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 input[type=range]::-moz-range-track { height:5px; background:#777; border-radius:3px; }
 input[type=range]::-moz-range-thumb { width:18px; height:52px; background:repeating-linear-gradient(to bottom,#444 0px,#444 2px,#111 2px,#111 5px); border-radius:3px; border:none; box-shadow:2px 2px 6px rgba(0,0,0,.7); }
-.slider-label { text-align:center; font-size:clamp(7px,1.8vw,9px); color:#5a5848; letter-spacing:.05em; margin-top:4px; }
+.slider-label { text-align:center; font-size:clamp(13px,3.2vw,16px); color:#1a1810; letter-spacing:.05em; margin-top:4px; }
 
 /* Bottom buttons */
 #buttons-row { flex:1; display:flex; justify-content:space-around; align-items:center; padding:0 2px; }
@@ -173,7 +173,7 @@ input[type=range]::-moz-range-thumb { width:18px; height:52px; background:repeat
 .action-btn:active { box-shadow:inset 2px 2px 7px rgba(0,0,0,.7); transform:scale(.94); }
 .action-btn.active { color:#6aba6a; }
 .action-btn svg { width:44%; height:44%; }
-.btn-label { font-size:clamp(7px,1.95vw,11px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
+.btn-label { font-size:clamp(13px,3.5vw,20px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
 
 /* ── Screen-only mode (state 2: game screen fills viewport, no interaction) ── */
 body.screen-only #gameboy { width:100vw; height:100dvh; padding:0; border-radius:0; box-shadow:none; background:#000; gap:0; }
@@ -261,7 +261,7 @@ body.screen-only #screen-wrapper::before { display:none; }
     <!-- Bottom buttons -->
     <div id="buttons-row">
       <div class="action-btn-wrap">
-        <span class="btn-label">再生・停止</span>
+        <span class="btn-label" id="lbl-play">再生</span>
         <button class="action-btn active" id="btn-play">
           <svg viewBox="0 0 24 24" fill="currentColor" id="play-icon">
             <path d="M8 5v14l11-7z"/>
@@ -269,7 +269,7 @@ body.screen-only #screen-wrapper::before { display:none; }
         </button>
       </div>
       <div class="action-btn-wrap">
-        <span class="btn-label">表示・非表示</span>
+        <span class="btn-label" id="lbl-hud">非表示</span>
         <button class="action-btn active" id="btn-hud">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -289,7 +289,7 @@ body.screen-only #screen-wrapper::before { display:none; }
         </button>
       </div>
       <div class="action-btn-wrap">
-        <span class="btn-label">音量設定</span>
+        <span class="btn-label">音量</span>
         <button class="action-btn active" id="btn-sound">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M3 9v6h4l5 5V4L7 9H3z"/>
@@ -955,6 +955,7 @@ function setMusicBtn(playing){
   document.getElementById('play-icon').innerHTML=playing
     ?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
     :'<path d="M8 5v14l11-7z"/>';
+  document.getElementById('lbl-play').textContent=playing?'停止':'再生';
 }
 
 btnPlay.addEventListener('click',()=>{
@@ -977,6 +978,7 @@ function applyDisplayMode(){
   trackBarEl.style.visibility=displayMode>=2?'hidden':'';
   hudEl.style.visibility=displayMode>=3?'hidden':'';
   btnHud.classList.toggle('active',displayMode<3); // lit until all 3 hidden
+  document.getElementById('lbl-hud').textContent=displayMode===0?'非表示':'表示';
 }
 btnHud.addEventListener('click',()=>{
   displayMode=(displayMode+1)%4; // 0→1→2→3→0
