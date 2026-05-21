@@ -599,7 +599,6 @@ function trackLabel(e) {
 }
 
 function selectTrack(delta) {
-  if(trackLoading) return; // block while confirmed track is still loading
   if(displayMode>0){ displayMode=0; applyDisplayMode(); }
   if(!playlist.length) return;
   playlistIdx=((playlistIdx+delta)%playlist.length+playlist.length)%playlist.length;
