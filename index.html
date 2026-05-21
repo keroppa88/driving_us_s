@@ -610,7 +610,7 @@ function selectTrack(delta) {
 
 function confirmTrack() {
   if(!isBrowsing) return;
-  if(musicPlaying) return;
+  if(musicPlaying&&!radioActive) return;
   isBrowsing=false;
   trackLoading=true;
   playingIdx=playlistIdx; // lock in the confirmed track
@@ -638,7 +638,7 @@ function applyVolAdj() {
   radioAudio.volume=v/100;
 }
 
-function seekYT(sec) { if(!musicPlaying) return; if(ytReady&&ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+sec,true); }
+function seekYT(sec) { if(!musicPlaying||radioActive) return; if(ytReady&&ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+sec,true); }
 function toggleYt() {
   if(radioActive){ radioAudio.paused?radioAudio.play().catch(console.error):radioAudio.pause(); return; }
   if(!ytReady||!ytPlayer) return;
