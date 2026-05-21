@@ -110,6 +110,12 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
   border-radius:4px;
 }
 #explain-back-btn:active { background:rgba(100,180,100,.15); }
+#lightbox {
+  position:fixed; inset:0; z-index:10001; background:rgba(0,0,0,.97);
+  overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y;
+  cursor:zoom-out; display:flex; align-items:flex-start; justify-content:flex-start;
+}
+#lightbox img { display:block; width:auto; height:auto; min-width:100%; }
 
 /* Sound panel */
 #sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:14px; }
@@ -335,6 +341,11 @@ body.screen-only #screen-wrapper::before { display:none; }
     <img src="cm02.png" alt="説明2">
   </div>
   <button id="explain-back-btn">戻る</button>
+</div>
+
+<!-- Image lightbox -->
+<div id="lightbox" style="display:none">
+  <img id="lightbox-img" src="" alt="">
 </div>
 
 <!-- YouTube player (off-screen) -->
@@ -1092,6 +1103,28 @@ document.getElementById('explain-back-btn').addEventListener('click',()=>{
   document.getElementById('explain-panel').style.display='none';
   startOverlay.style.display='flex';
 });
+// 説明画像タップ → ライトボックス拡大表示
+const lightbox=document.getElementById('lightbox');
+const lightboxImg=document.getElementById('lightbox-img');
+document.querySelectorAll('#explain-content img').forEach(img=>{
+  img.style.cursor='zoom-in';
+  let tapY=0;
+  img.addEventListener('touchstart',e=>{ tapY=e.touches[0].clientY; },{passive:true});
+  img.addEventListener('touchend',e=>{
+    if(Math.abs(e.changedTouches[0].clientY-tapY)<12){
+      e.preventDefault();
+      lightboxImg.src=img.src;
+      lightbox.style.display='flex';
+      lightbox.scrollTo(0,0);
+    }
+  },{passive:false});
+});
+let lbTapY=0;
+lightbox.addEventListener('touchstart',e=>{ lbTapY=e.touches[0].clientY; },{passive:true});
+lightbox.addEventListener('touchend',e=>{
+  if(Math.abs(e.changedTouches[0].clientY-lbTapY)<12){ e.preventDefault(); lightbox.style.display='none'; }
+},{passive:false});
+lightbox.addEventListener('click',()=>{ lightbox.style.display='none'; });
 
 // DRIVE START
 startBtn.addEventListener('click',()=>{
