@@ -1051,7 +1051,7 @@ btnSoundBtn.addEventListener('click',()=>{
 });
 
 let fsState=0; // 0:normal 1:fullscreen 2:screen-only
-function updateFsBtn(){ btnFs.classList.toggle('active',fsState===0); }
+function updateFsBtn(){ btnFs.classList.add('active'); }
 function exitScreenOnly(){
   if(fsState!==2) return;
   document.body.classList.remove('screen-only');
