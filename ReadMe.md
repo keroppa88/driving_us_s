@@ -50,6 +50,8 @@
 * 80キロ以上で砂漠に入るとガクガク揺れる
 * 衝突設定は無し。ゴーストライダー的な。死んで浮遊しているのかも。
 
+> <img width="300" height="303" alt="image" src="https://github.com/user-attachments/assets/9170510b-f5f2-4e37-b8d1-92dd9f11373d" />
+
 ### 登場車両
 ゲーム開始から以下の順で車が現れる（35分サイクルでループ）。
 
@@ -67,8 +69,6 @@
 
 * **対向車**：左車線を手前に向かって走ってくる。約30秒で消滅。
 * **同方向車**：右車線をプレイヤーと同じ方向に低速走行。追い抜いてマップ半分（約117m）の距離が開くと消滅（最大3分）。
-
-> <img width="300" height="303" alt="image" src="https://github.com/user-attachments/assets/9170510b-f5f2-4e37-b8d1-92dd9f11373d" />
 
 > <img width="300" height="140" alt="image" src="https://github.com/user-attachments/assets/935ae174-6fad-47cd-94f5-6ad42bae2e22" />
 
