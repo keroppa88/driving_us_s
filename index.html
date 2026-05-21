@@ -1108,13 +1108,22 @@ const lightbox=document.getElementById('lightbox');
 const lightboxImg=document.getElementById('lightbox-img');
 document.querySelectorAll('#explain-content img').forEach(img=>{
   img.style.cursor='zoom-in';
-  img.addEventListener('click',e=>{
-    e.stopPropagation();
-    lightboxImg.src=img.src;
-    lightbox.style.display='flex';
-    lightbox.scrollTo(0,0);
-  });
+  let tapY=0;
+  img.addEventListener('touchstart',e=>{ tapY=e.touches[0].clientY; },{passive:true});
+  img.addEventListener('touchend',e=>{
+    if(Math.abs(e.changedTouches[0].clientY-tapY)<12){
+      e.preventDefault();
+      lightboxImg.src=img.src;
+      lightbox.style.display='flex';
+      lightbox.scrollTo(0,0);
+    }
+  },{passive:false});
 });
+let lbTapY=0;
+lightbox.addEventListener('touchstart',e=>{ lbTapY=e.touches[0].clientY; },{passive:true});
+lightbox.addEventListener('touchend',e=>{
+  if(Math.abs(e.changedTouches[0].clientY-lbTapY)<12){ e.preventDefault(); lightbox.style.display='none'; }
+},{passive:false});
 lightbox.addEventListener('click',()=>{ lightbox.style.display='none'; });
 
 // DRIVE START
