@@ -271,9 +271,9 @@ body.screen-only #screen-wrapper::before { display:none; }
       <div class="action-btn-wrap">
         <span class="btn-label" id="lbl-hud">非表示</span>
         <button class="action-btn active" id="btn-hud">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
+          <svg id="hud-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+            <line x1="1" y1="1" x2="23" y2="23" stroke-linecap="round"/>
           </svg>
         </button>
       </div>
@@ -977,8 +977,12 @@ function applyDisplayMode(){
   connectBar.style.visibility=displayMode>=1?'hidden':'';
   trackBarEl.style.visibility=displayMode>=2?'hidden':'';
   hudEl.style.visibility=displayMode>=3?'hidden':'';
-  btnHud.classList.toggle('active',displayMode<3); // lit until all 3 hidden
-  document.getElementById('lbl-hud').textContent=displayMode===0?'非表示':'表示';
+  btnHud.classList.toggle('active',displayMode<3);
+  const allHidden=displayMode===3;
+  document.getElementById('lbl-hud').textContent=allHidden?'表示':'非表示';
+  document.getElementById('hud-icon').innerHTML=allHidden
+    ?'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    :'<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23" stroke-linecap="round"/>';
 }
 btnHud.addEventListener('click',()=>{
   displayMode=(displayMode+1)%4; // 0→1→2→3→0
