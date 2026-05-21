@@ -978,6 +978,7 @@ function applyDisplayMode(){
   connectBar.style.visibility=displayMode>=1?'hidden':'';
   trackBarEl.style.visibility=displayMode>=2?'hidden':'';
   hudEl.style.visibility=displayMode>=3?'hidden':'';
+  document.getElementById('crosshair').style.visibility=displayMode>=3?'hidden':'';
   btnHud.classList.add('active');
   const allHidden=displayMode===3;
   document.getElementById('lbl-hud').textContent=allHidden?'表示':'非表示';
