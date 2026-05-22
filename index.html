@@ -118,7 +118,7 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 #lightbox img { display:block; width:auto; height:auto; min-width:100%; }
 
 /* Sound panel */
-#sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:14px; }
+#sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:14px; touch-action:auto; }
 #sound-panel h2 { font-size:clamp(16px,4vw,22px); color:#99cc99; }
 .vol-block { width:100%; display:flex; flex-direction:column; gap:6px; }
 .vol-block label { font-size:clamp(18px,4.5vw,24px); color:#88aa88; }
@@ -610,7 +610,7 @@ function selectTrack(delta) {
 
 function confirmTrack() {
   if(!isBrowsing) return;
-  if(musicPlaying) return;
+  if(musicPlaying&&!radioActive) return;
   isBrowsing=false;
   trackLoading=true;
   playingIdx=playlistIdx; // lock in the confirmed track
@@ -638,7 +638,7 @@ function applyVolAdj() {
   radioAudio.volume=v/100;
 }
 
-function seekYT(sec) { if(!musicPlaying) return; if(ytReady&&ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+sec,true); }
+function seekYT(sec) { if(!musicPlaying||radioActive) return; if(ytReady&&ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+sec,true); }
 function toggleYt() {
   if(radioActive){ radioAudio.paused?radioAudio.play().catch(console.error):radioAudio.pause(); return; }
   if(!ytReady||!ytPlayer) return;
@@ -1051,7 +1051,7 @@ btnSoundBtn.addEventListener('click',()=>{
 });
 
 let fsState=0; // 0:normal 1:fullscreen 2:screen-only
-function updateFsBtn(){ btnFs.classList.toggle('active',fsState===0); }
+function updateFsBtn(){ btnFs.classList.add('active'); }
 function exitScreenOnly(){
   if(fsState!==2) return;
   document.body.classList.remove('screen-only');
