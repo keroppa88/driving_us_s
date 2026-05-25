@@ -1113,6 +1113,36 @@ document.addEventListener('webkitfullscreenchange',()=>{
 });
 updateFsBtn();
 
+// PC: ダブルクリックで全画面ボタンと同じ動作
+canvas.addEventListener('dblclick',()=>{ btnFs.click(); });
+
+// PC: キーボード操作
+let kbHoldTimer=null, kbHoldInterval=null;
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.repeat) return;
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const d=e.key==='ArrowUp'?-1:+1;
+    selectTrack(d);
+    kbHoldTimer=setTimeout(()=>{
+      kbHoldInterval=setInterval(()=>selectTrack(d*5),180);
+    },500);
+  } else if(e.key==='ArrowLeft'){
+    e.preventDefault(); seekYT(-10);
+  } else if(e.key==='ArrowRight'){
+    e.preventDefault(); seekYT(+10);
+  } else if(e.key==='y'||e.key==='Y'){
+    if(isBrowsing) confirmTrack(); else toggleYt();
+  }
+});
+document.addEventListener('keyup',e=>{
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    clearTimeout(kbHoldTimer); kbHoldTimer=null;
+    clearInterval(kbHoldInterval); kbHoldInterval=null;
+  }
+});
+
 // 説明ページ
 document.getElementById('explain-btn').addEventListener('click',()=>{
   startOverlay.style.display='none';
