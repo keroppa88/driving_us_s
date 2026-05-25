@@ -1134,6 +1134,8 @@ document.addEventListener('keydown',e=>{
     e.preventDefault(); seekYT(+10);
   } else if(e.key==='y'||e.key==='Y'){
     if(isBrowsing) confirmTrack(); else toggleYt();
+  } else if(e.key==='a'||e.key==='A'){
+    btnHud.click();
   }
 });
 document.addEventListener('keyup',e=>{
