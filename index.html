@@ -576,7 +576,7 @@ function updateCruiseBgm() { playBgm(cruiseSpeed > 14 ? 'freeway2' : 'freeway1')
 let ytPlayer = null, ytReady = false;
 let currentVolAdj = 1.0, baseVol = 70;
 let playlist = [{ id:'Uw5OLnN7UvM', type:'yt', name:'Bill Withers,Just The Two Of Us', color:null, rain:false, star:false, volAdj:1 }];
-let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null;
+let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null, trackConfirmed = false;
 
 const nowPlayingEl  = null; // now-playing2 removed
 const connectingEl  = connectBar;
@@ -622,6 +622,7 @@ function confirmTrack() {
   if(musicPlaying&&!radioActive) return;
   isBrowsing=false;
   trackLoading=true;
+  trackConfirmed=true;
   playingIdx=playlistIdx; // lock in the confirmed track
   const e=playlist[playingIdx];
   decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
@@ -667,7 +668,7 @@ async function initYTPlayer() {
   try {
     await loadYTApi();
     ytPlayer=await new Promise((res,rej)=>{
-      new YT.Player('yt-container',{width:400,height:300,videoId:'Uw5OLnN7UvM',
+      new YT.Player('yt-container',{width:400,height:300,videoId:'3Fy8XYr6J6s',
         playerVars:{autoplay:0,controls:0,fs:0},
         events:{
           onReady:e=>{ytReady=true;res(e.target);},
@@ -1038,7 +1039,7 @@ btnPlay.addEventListener('click',()=>{
   // Stopped: confirm browsed track or resume
   if(isBrowsing){ confirmTrack(); return; }
   if(radioActive){ radioAudio.play().catch(console.error); return; }
-  if(!ytReady||!ytPlayer) return;
+  if(!ytReady||!ytPlayer||!trackConfirmed) return;
   ytPlayer.playVideo();
 });
 
@@ -1111,6 +1112,38 @@ document.addEventListener('webkitfullscreenchange',()=>{
   updateFsBtn();
 });
 updateFsBtn();
+
+// PC: ダブルクリックで全画面ボタンと同じ動作
+canvas.addEventListener('dblclick',()=>{ btnFs.click(); });
+
+// PC: キーボード操作
+let kbHoldTimer=null, kbHoldInterval=null;
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.repeat) return;
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const d=e.key==='ArrowUp'?-1:+1;
+    selectTrack(d);
+    kbHoldTimer=setTimeout(()=>{
+      kbHoldInterval=setInterval(()=>selectTrack(d*5),180);
+    },500);
+  } else if(e.key==='ArrowLeft'){
+    e.preventDefault(); seekYT(-10);
+  } else if(e.key==='ArrowRight'){
+    e.preventDefault(); seekYT(+10);
+  } else if(e.key==='y'||e.key==='Y'){
+    if(isBrowsing) confirmTrack(); else toggleYt();
+  } else if(e.key==='a'||e.key==='A'){
+    btnHud.click();
+  }
+});
+document.addEventListener('keyup',e=>{
+  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
+    clearTimeout(kbHoldTimer); kbHoldTimer=null;
+    clearInterval(kbHoldInterval); kbHoldInterval=null;
+  }
+});
 
 // 説明ページ
 document.getElementById('explain-btn').addEventListener('click',()=>{
