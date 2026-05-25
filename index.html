@@ -576,7 +576,7 @@ function updateCruiseBgm() { playBgm(cruiseSpeed > 14 ? 'freeway2' : 'freeway1')
 let ytPlayer = null, ytReady = false;
 let currentVolAdj = 1.0, baseVol = 70;
 let playlist = [{ id:'Uw5OLnN7UvM', type:'yt', name:'Bill Withers,Just The Two Of Us', color:null, rain:false, star:false, volAdj:1 }];
-let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null;
+let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null, trackConfirmed = false;
 
 const nowPlayingEl  = null; // now-playing2 removed
 const connectingEl  = connectBar;
@@ -622,6 +622,7 @@ function confirmTrack() {
   if(musicPlaying&&!radioActive) return;
   isBrowsing=false;
   trackLoading=true;
+  trackConfirmed=true;
   playingIdx=playlistIdx; // lock in the confirmed track
   const e=playlist[playingIdx];
   decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
@@ -1038,7 +1039,7 @@ btnPlay.addEventListener('click',()=>{
   // Stopped: confirm browsed track or resume
   if(isBrowsing){ confirmTrack(); return; }
   if(radioActive){ radioAudio.play().catch(console.error); return; }
-  if(!ytReady||!ytPlayer) return;
+  if(!ytReady||!ytPlayer||!trackConfirmed) return;
   ytPlayer.playVideo();
 });
 
