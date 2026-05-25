@@ -668,7 +668,7 @@ async function initYTPlayer() {
   try {
     await loadYTApi();
     ytPlayer=await new Promise((res,rej)=>{
-      new YT.Player('yt-container',{width:400,height:300,videoId:'Uw5OLnN7UvM',
+      new YT.Player('yt-container',{width:400,height:300,videoId:'3Fy8XYr6J6s',
         playerVars:{autoplay:0,controls:0,fs:0},
         events:{
           onReady:e=>{ytReady=true;res(e.target);},
