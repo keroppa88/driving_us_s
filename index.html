@@ -976,17 +976,27 @@ window.addEventListener('mousemove',e=>{
 });
 
 // D-pad
+let dpadHoldTimer=null, dpadHoldInterval=null;
 document.querySelectorAll('.dpad-btn').forEach(btn=>{
   const dir=btn.dataset.dir; if(!dir)return;
   const press=()=>{
     btn.classList.add('pressed');
-    if(dir==='up'){selectTrack(-1);}
-    else if(dir==='down'){selectTrack(+1);}
+    if(dir==='up'||dir==='down'){
+      const d=dir==='up'?-1:+1;
+      selectTrack(d);
+      dpadHoldTimer=setTimeout(()=>{
+        dpadHoldInterval=setInterval(()=>selectTrack(d*5),180);
+      },500);
+    }
     else if(dir==='left'){seekYT(-10);}
     else if(dir==='right'){seekYT(+10);}
     else if(dir==='center'){if(isBrowsing)confirmTrack();else toggleYt();}
   };
-  const release=()=>btn.classList.remove('pressed');
+  const release=()=>{
+    btn.classList.remove('pressed');
+    clearTimeout(dpadHoldTimer); dpadHoldTimer=null;
+    clearInterval(dpadHoldInterval); dpadHoldInterval=null;
+  };
   btn.addEventListener('mousedown',press);
   btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
   btn.addEventListener('mouseup',release);btn.addEventListener('mouseleave',release);
