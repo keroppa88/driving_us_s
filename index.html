@@ -165,7 +165,7 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 #dpad-up     { grid-area:1/2; border-radius:5px 5px 2px 2px; }
 #dpad-left   { grid-area:2/1; border-radius:5px 2px 2px 5px; }
 #dpad-center { grid-area:2/2; border-radius:4px; background:#1a1a1a; }
-#dpad-center.pl-active #dpad-center-dot { color:#ff2020; text-shadow:0 0 8px #ff0000,0 0 16px #ff0000; }
+#dpad-center.pl-active #dpad-center-dot { color:#eeffee; text-shadow:0 0 6px #aaffaa; }
 .pl-name-small { font-size:0.7em; }
 #dpad-right  { grid-area:2/3; border-radius:2px 5px 5px 2px; }
 #dpad-down   { grid-area:3/2; border-radius:2px 2px 5px 5px; }
@@ -580,6 +580,7 @@ let currentVolAdj = 1.0, baseVol = 70;
 let playlist = [{ id:'Uw5OLnN7UvM', type:'yt', name:'Bill Withers,Just The Two Of Us', color:null, rain:false, star:false, volAdj:1 }];
 let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null, trackConfirmed = false;
 let playlistBrowse = false, currentPL = null, plTrackIdx = 0, playlistActive = false;
+let nowPlayingLabel = '';
 
 const nowPlayingEl  = null; // now-playing2 removed
 const connectingEl  = connectBar;
@@ -659,7 +660,7 @@ function selectTrack(delta) {
 }
 
 function playTrack(track, label) {
-  isBrowsing=false; trackLoading=true; trackConfirmed=true;
+  isBrowsing=false; trackLoading=true; trackConfirmed=true; nowPlayingLabel=label;
   decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
   connectingEl.style.display='block';
   setDisp(connectingEl,label,{suffix:'　接続中・・・'});
@@ -723,7 +724,7 @@ async function initYTPlayer() {
         events:{
           onReady:e=>{ytReady=true;res(e.target);},
           onStateChange:e=>{
-            if(e.data===1){trackLoading=false;const lbl=trackLabel(playlist[playingIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;isBrowsing=false;applyVolAdj();setMusicBtn(true);}
+            if(e.data===1){trackLoading=false;connectingEl.style.display='block';setDisp(connectingEl,nowPlayingLabel);setDisp(trackBarEl,nowPlayingLabel,{prefix:'▶  '});isBrowsing=false;applyVolAdj();setMusicBtn(true);}
             if(e.data===2){trackLoading=false;setMusicBtn(false);}
             if(e.data===0){trackLoading=false;currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);setMusicBtn(false);clearNowPlaying();}
           },
@@ -746,7 +747,7 @@ function playRadio(url){
   radioActive=true;
 }
 function stopRadio(){if(radioHls){radioHls.destroy();radioHls=null;}radioAudio.pause();radioAudio.src='';radioActive=false;}
-radioAudio.addEventListener('playing',()=>{trackLoading=false;const lbl=trackLabel(playlist[playingIdx]);connectingEl.style.display='block';connectingEl.textContent=lbl;trackBarEl.textContent=`▶  ${lbl}`;setMusicBtn(true);});
+radioAudio.addEventListener('playing',()=>{trackLoading=false;connectingEl.style.display='block';setDisp(connectingEl,nowPlayingLabel);setDisp(trackBarEl,nowPlayingLabel,{prefix:'▶  '});setMusicBtn(true);});
 radioAudio.addEventListener('pause', ()=>setMusicBtn(false));
 radioAudio.addEventListener('ended',()=>{setMusicBtn(false);clearNowPlaying();});
 
@@ -1044,7 +1045,6 @@ document.querySelectorAll('.dpad-btn').forEach(btn=>{
     else if(dir==='center'){
       if(playlistBrowse&&!isBrowsing) exitPlaylist();
       else if(isBrowsing) confirmTrack();
-      else toggleYt();
     }
   };
   const release=()=>{
@@ -1189,7 +1189,7 @@ document.addEventListener('keydown',e=>{
   } else if(e.key==='y'||e.key==='Y'){
     if(playlistBrowse&&!isBrowsing) exitPlaylist();
     else if(isBrowsing) confirmTrack();
-    else toggleYt();
+    else if(!playlistBrowse) toggleYt();
   } else if(e.key==='a'||e.key==='A'){
     btnHud.click();
   }
