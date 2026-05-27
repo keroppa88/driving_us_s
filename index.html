@@ -65,7 +65,7 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
   position:absolute; bottom:7px; left:9px; right:9px;
   z-index:10; pointer-events:none;
   font-size:clamp(16px,4.3vw,24px);
-  color:#ffffff; text-shadow:0 0 5px rgba(255,255,255,.2);
+  color:rgba(170,210,170,.85); text-shadow:0 0 5px rgba(0,200,0,.3);
   white-space:normal; word-break:break-word;
   text-align:center; line-height:1.2;
 }
@@ -139,7 +139,7 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
   z-index:10; pointer-events:none;
   font-size:clamp(24px,6vw,34px);
   font-weight:bold;
-  color:#ffffff;
+  color:rgba(155,200,155,.9);
   text-align:center; display:none;
   white-space:normal; word-break:break-word; line-height:1.2;
 }
@@ -168,6 +168,7 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 #dpad-center-dot { color:#555; }
 #dpad-center.pl-active #dpad-center-dot { color:#eeffee; text-shadow:0 0 6px #aaffaa; }
 .pl-name-small { font-size:0.7em; }
+.pl-word { color:#ffffff; }
 #dpad-right  { grid-area:2/3; border-radius:2px 5px 5px 2px; }
 #dpad-down   { grid-area:3/2; border-radius:2px 2px 5px 5px; }
 #dpad-corner-tl { grid-area:1/1; background:transparent!important; box-shadow:none!important; }
@@ -593,7 +594,8 @@ function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 function setDisp(el, text, {prefix='',suffix=''}={}) {
   const sep=text.indexOf(' ▷ ');
   if(sep!==-1){
-    el.innerHTML=`<span class="pl-name-small">${esc(text.slice(0,sep))}</span><br>${esc(prefix+text.slice(sep+3)+suffix)}`;
+    const plPart=esc(text.slice(0,sep)).replace('プレイリスト','<span class="pl-word">プレイリスト</span>');
+    el.innerHTML=`<span class="pl-name-small">${plPart}</span><br>${esc(prefix+text.slice(sep+3)+suffix)}`;
   } else { el.textContent=prefix+text+suffix; }
 }
 function setPlActive(on){ document.getElementById('dpad-center').classList.toggle('pl-active',on); }
@@ -664,7 +666,7 @@ function selectTrack(delta) {
   if(e.type==='label') connectingEl.textContent=`── ${e.name} ──`;
   else if(e.type==='playlist'){
     const m=e.name.match(/^(プレイリスト)(「[^」]*」)$/);
-    if(m) connectingEl.innerHTML=`${esc(m[1])}<br>${esc(m[2])}`;
+    if(m) connectingEl.innerHTML=`<span class="pl-word">${esc(m[1])}</span><br>${esc(m[2])}`;
     else connectingEl.textContent=e.name;
   }
   else connectingEl.textContent=trackLabel(e);
