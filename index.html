@@ -165,6 +165,8 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 #dpad-up     { grid-area:1/2; border-radius:5px 5px 2px 2px; }
 #dpad-left   { grid-area:2/1; border-radius:5px 2px 2px 5px; }
 #dpad-center { grid-area:2/2; border-radius:4px; background:#1a1a1a; }
+#dpad-center.pl-active #dpad-center-dot { color:#ff2020; text-shadow:0 0 8px #ff0000,0 0 16px #ff0000; }
+.pl-name-small { font-size:0.7em; }
 #dpad-right  { grid-area:2/3; border-radius:2px 5px 5px 2px; }
 #dpad-down   { grid-area:3/2; border-radius:2px 2px 5px 5px; }
 #dpad-corner-tl { grid-area:1/1; background:transparent!important; box-shadow:none!important; }
@@ -274,7 +276,7 @@ body.screen-only #screen-wrapper::before { display:none; }
           <div id="dpad-up"     class="dpad-btn" data-dir="up">   <span class="dpad-arrow">▲</span></div>
           <div id="dpad-corner-tr"></div>
           <div id="dpad-left"   class="dpad-btn" data-dir="left"> <span class="dpad-arrow">◀</span></div>
-          <div id="dpad-center" class="dpad-btn" data-dir="center"><span class="dpad-arrow" style="color:#555">●</span></div>
+          <div id="dpad-center" class="dpad-btn" data-dir="center"><span class="dpad-arrow" id="dpad-center-dot" style="color:#555">●</span></div>
           <div id="dpad-right"  class="dpad-btn" data-dir="right"><span class="dpad-arrow">▶</span></div>
           <div id="dpad-corner-bl"></div>
           <div id="dpad-down"   class="dpad-btn" data-dir="down"> <span class="dpad-arrow">▼</span></div>
@@ -577,28 +579,57 @@ let ytPlayer = null, ytReady = false;
 let currentVolAdj = 1.0, baseVol = 70;
 let playlist = [{ id:'Uw5OLnN7UvM', type:'yt', name:'Bill Withers,Just The Two Of Us', color:null, rain:false, star:false, volAdj:1 }];
 let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null, trackConfirmed = false;
+let playlistBrowse = false, currentPL = null, plTrackIdx = 0, playlistActive = false;
 
 const nowPlayingEl  = null; // now-playing2 removed
 const connectingEl  = connectBar;
 
 const decisionSE = new Audio('music/決定ボタンを押す7.mp3');
 
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setDisp(el, text, {prefix='',suffix=''}={}) {
+  const sep=text.indexOf(' ▷ ');
+  if(sep!==-1){
+    el.innerHTML=`<span class="pl-name-small">${esc(text.slice(0,sep))}</span><br>${esc(prefix+text.slice(sep+3)+suffix)}`;
+  } else { el.textContent=prefix+text+suffix; }
+}
+function setPlActive(on){ document.getElementById('dpad-center').classList.toggle('pl-active',on); }
+function exitPlaylist(){ playlistBrowse=false; playlistActive=false; currentPL=null; setPlActive(false); }
+
+function parseSongLine(l) {
+  const urlM=l.match(/https?:\/\/[^「\s]+/); if(!urlM) return null;
+  const url=urlM[0], rest=l.slice(urlM.index+url.length).trim();
+  const nameM=rest.match(/「([^」]*)」/); const name=nameM?nameM[1]:'';
+  const kw=rest.replace(/「[^」]*」/,'');
+  const colorM=kw.match(/#[0-9a-fA-F]{6}/); const color=colorM?colorM[0]:null;
+  const horizM=kw.match(/地平線(#[0-9a-fA-F]{6})/); const horiz=horizM?horizM[1]:null;
+  const volM=kw.match(/音量([+-]\d+)%/); const volAdj=volM?1+parseInt(volM[1])/100:1;
+  const isYT=/youtube\.com|youtu\.be/.test(url);
+  const vid=isYT?(url.match(/[?&]v=([^&]+)/)?.[1]||url):url.replace(/&amp;/g,'&');
+  return {id:vid,type:isYT?'yt':'radio',name,color,rain:/雨/.test(kw),star:/星/.test(kw),solid:/単色/.test(kw),horiz,volAdj};
+}
+
 async function loadPlaylist() {
   try {
     const text = await (await fetch('musiclist.txt')).text();
-    const entries = text.split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#')).map(l=>{
-      const urlM=l.match(/https?:\/\/[^「\s]+/); if(!urlM) return {type:'label',name:l,id:null};
-      const url=urlM[0], rest=l.slice(urlM.index+url.length).trim();
-      const nameM=rest.match(/「([^」]*)」/); const name=nameM?nameM[1]:'';
-      const kw=rest.replace(/「[^」]*」/,'');
-      const colorM=kw.match(/#[0-9a-fA-F]{6}/); const color=colorM?colorM[0]:null;
-      const horizM=kw.match(/地平線(#[0-9a-fA-F]{6})/); const horiz=horizM?horizM[1]:null;
-      const volM=kw.match(/音量([+-]\d+)%/); const volAdj=volM?1+parseInt(volM[1])/100:1;
-      const isYT=/youtube\.com|youtu\.be/.test(url);
-      const vid=isYT?(url.match(/[?&]v=([^&]+)/)?.[1]||url):url.replace(/&amp;/g,'&');
-      return {id:vid,type:isYT?'yt':'radio',name,color,rain:/雨/.test(kw),star:/星/.test(kw),solid:/単色/.test(kw),horiz,volAdj};
-    }).filter(Boolean);
-    if(entries.length>0){playlist=entries;}
+    const lines = text.split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#'));
+    const entries = [];
+    for(const l of lines) {
+      const plM=l.match(/^プレイリスト「([^」]+)」/);
+      if(plM){
+        const plName=`プレイリスト「${plM[1]}」`;
+        try {
+          const plText=await (await fetch(plName+'.txt')).text();
+          const tracks=plText.split('\n').map(x=>x.trim()).filter(x=>x&&!x.startsWith('#')).map(parseSongLine).filter(Boolean);
+          if(tracks.length>0) entries.push({type:'playlist',name:plName,tracks,id:null,color:null,rain:false,star:false,volAdj:1});
+        } catch(_){}
+        continue;
+      }
+      const urlM=l.match(/https?:\/\/[^「\s]+/);
+      if(!urlM){ entries.push({type:'label',name:l,id:null}); continue; }
+      const song=parseSongLine(l); if(song) entries.push(song);
+    }
+    if(entries.length>0) playlist=entries;
   } catch(e){console.warn('[playlist] load failed');}
 }
 
@@ -609,35 +640,54 @@ function trackLabel(e) {
 
 function selectTrack(delta) {
   if(displayMode>0){ displayMode=0; applyDisplayMode(); }
+  if(playlistBrowse&&currentPL){
+    const n=currentPL.tracks.length;
+    plTrackIdx=((plTrackIdx+delta)%n+n)%n;
+    isBrowsing=true;
+    connectingEl.style.display='block';
+    setDisp(connectingEl,`${currentPL.name} ▷ ${trackLabel(currentPL.tracks[plTrackIdx])}`);
+    clearTimeout(selectDebounce); return;
+  }
   if(!playlist.length) return;
   playlistIdx=((playlistIdx+delta)%playlist.length+playlist.length)%playlist.length;
   const e=playlist[playlistIdx]; isBrowsing=(e.type!=='label');
   connectingEl.style.display='block';
-  connectingEl.textContent=e.type==='label'?`── ${e.name} ──`:trackLabel(e);
+  if(e.type==='label') connectingEl.textContent=`── ${e.name} ──`;
+  else if(e.type==='playlist') setDisp(connectingEl,e.name);
+  else connectingEl.textContent=trackLabel(e);
   clearTimeout(selectDebounce);
+}
+
+function playTrack(track, label) {
+  isBrowsing=false; trackLoading=true; trackConfirmed=true;
+  decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
+  connectingEl.style.display='block';
+  setDisp(connectingEl,label,{suffix:'　接続中・・・'});
+  if(track.color) setSkyFromColor(track.color,!!track.solid);
+  setSkyHorizBand(track.horiz);
+  rainActive=!!track.rain; starActive=!!track.star;
+  baseVol=parseInt(ytVolSlider.value); currentVolAdj=track.volAdj??1;
+  applyVolAdj();
+  setDisp(trackBarEl,label,{prefix:'▶  '});
+  if(track.type==='radio'){ if(ytReady&&ytPlayer) ytPlayer.stopVideo(); playRadio(track.id); }
+  else { stopRadio(); if(ytReady&&ytPlayer) ytPlayer.loadVideoById(track.id); }
 }
 
 function confirmTrack() {
   if(!isBrowsing) return;
-  if(musicPlaying&&!radioActive) return;
-  isBrowsing=false;
-  trackLoading=true;
-  trackConfirmed=true;
-  playingIdx=playlistIdx; // lock in the confirmed track
-  const e=playlist[playingIdx];
-  decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
-  connectingEl.style.display='block';
-  connectingEl.textContent=`${trackLabel(e)}　接続中・・・`;
-  if(e.color) setSkyFromColor(e.color,!!e.solid);
-  setSkyHorizBand(e.horiz);
-  rainActive=!!e.rain; starActive=!!e.star;
-  baseVol=parseInt(ytVolSlider.value); currentVolAdj=e.volAdj??1;
-  applyVolAdj();
-  trackBarEl.textContent=`▶  ${trackLabel(e)}`;
-  if(nowPlayingEl) nowPlayingEl.textContent=`▶  ${trackLabel(e)}`;
-  if(e.type==='radio'){ if(ytReady&&ytPlayer) ytPlayer.stopVideo(); playRadio(e.id); }
-  else { stopRadio(); if(ytReady&&ytPlayer) ytPlayer.loadVideoById(e.id); }
-  // playingIdx is now set; browsing is blocked until trackLoading clears
+  if(musicPlaying&&!radioActive&&!(playlistBrowse&&currentPL)) return;
+  if(playlistBrowse&&currentPL){
+    const track=currentPL.tracks[plTrackIdx];
+    playTrack(track,`${currentPL.name} ▷ ${trackLabel(track)}`); return;
+  }
+  const e=playlist[playlistIdx];
+  if(e.type==='playlist'){
+    playlistActive=true; playlistBrowse=true; currentPL=e; plTrackIdx=0; setPlActive(true);
+    playTrack(e.tracks[0],`${e.name} ▷ ${trackLabel(e.tracks[0])}`); return;
+  }
+  exitPlaylist();
+  playingIdx=playlistIdx;
+  playTrack(e,trackLabel(e));
 }
 
 function applyVolAdj() {
@@ -991,7 +1041,11 @@ document.querySelectorAll('.dpad-btn').forEach(btn=>{
     }
     else if(dir==='left'){seekYT(-10);}
     else if(dir==='right'){seekYT(+10);}
-    else if(dir==='center'){if(isBrowsing)confirmTrack();else toggleYt();}
+    else if(dir==='center'){
+      if(playlistBrowse&&!isBrowsing) exitPlaylist();
+      else if(isBrowsing) confirmTrack();
+      else toggleYt();
+    }
   };
   const release=()=>{
     btn.classList.remove('pressed');
@@ -1133,7 +1187,9 @@ document.addEventListener('keydown',e=>{
   } else if(e.key==='ArrowRight'){
     e.preventDefault(); seekYT(+10);
   } else if(e.key==='y'||e.key==='Y'){
-    if(isBrowsing) confirmTrack(); else toggleYt();
+    if(playlistBrowse&&!isBrowsing) exitPlaylist();
+    else if(isBrowsing) confirmTrack();
+    else toggleYt();
   } else if(e.key==='a'||e.key==='A'){
     btnHud.click();
   }
