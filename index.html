@@ -165,6 +165,7 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 #dpad-up     { grid-area:1/2; border-radius:5px 5px 2px 2px; }
 #dpad-left   { grid-area:2/1; border-radius:5px 2px 2px 5px; }
 #dpad-center { grid-area:2/2; border-radius:4px; background:#1a1a1a; }
+#dpad-center-dot { color:#555; }
 #dpad-center.pl-active #dpad-center-dot { color:#eeffee; text-shadow:0 0 6px #aaffaa; }
 .pl-name-small { font-size:0.7em; }
 #dpad-right  { grid-area:2/3; border-radius:2px 5px 5px 2px; }
@@ -276,7 +277,7 @@ body.screen-only #screen-wrapper::before { display:none; }
           <div id="dpad-up"     class="dpad-btn" data-dir="up">   <span class="dpad-arrow">▲</span></div>
           <div id="dpad-corner-tr"></div>
           <div id="dpad-left"   class="dpad-btn" data-dir="left"> <span class="dpad-arrow">◀</span></div>
-          <div id="dpad-center" class="dpad-btn" data-dir="center"><span class="dpad-arrow" id="dpad-center-dot" style="color:#555">●</span></div>
+          <div id="dpad-center" class="dpad-btn" data-dir="center"><span class="dpad-arrow" id="dpad-center-dot">●</span></div>
           <div id="dpad-right"  class="dpad-btn" data-dir="right"><span class="dpad-arrow">▶</span></div>
           <div id="dpad-corner-bl"></div>
           <div id="dpad-down"   class="dpad-btn" data-dir="down"> <span class="dpad-arrow">▼</span></div>
@@ -596,7 +597,12 @@ function setDisp(el, text, {prefix='',suffix=''}={}) {
   } else { el.textContent=prefix+text+suffix; }
 }
 function setPlActive(on){ document.getElementById('dpad-center').classList.toggle('pl-active',on); }
-function exitPlaylist(){ playlistBrowse=false; playlistActive=false; currentPL=null; setPlActive(false); }
+function exitPlaylist(){
+  if(!playlistBrowse&&!playlistActive) return;
+  playlistBrowse=false; playlistActive=false; currentPL=null; setPlActive(false);
+  isBrowsing=false;
+  if(!musicPlaying) connectingEl.style.display='none';
+}
 
 function parseSongLine(l) {
   const urlM=l.match(/https?:\/\/[^「\s]+/); if(!urlM) return null;
