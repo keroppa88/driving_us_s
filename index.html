@@ -699,8 +699,10 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
         p*=scale;
         fl=vec2(0.0, -uFlow);            // -uFlow: features sweep horizon->zenith->behind
       } else {
-        // 雲2: 地平線近くの遠景。1つ1つを大きめ(scale1/4)・少し白く・水墨画ふう
-        scale=0.9; cov=0.70; soft=0.10; skyMix=0.28;
+        // 雲2: 天頂まで分布。大きめ(scale)・少し白く・水墨画ふう。
+        // 天頂で投影が潰れて空かないよう分母をクランプ(max)して上空にも雲を出す。
+        scale=0.9; cov=0.52; soft=0.18; skyMix=0.28;
+        p = dir.xz/max(dir.y,0.30);
         p*=scale; p.x*=0.6;
         fl=vec2(uTime*0.006, 0.0);
       }
@@ -737,7 +739,7 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
     cloudTime += dt;
     // 雲1の前方フロー: 基本ドリフト + 走行速度連動
     const spd = (typeof cruiseSpeed !== 'undefined') ? cruiseSpeed : 0;
-    cloudFlow += dt * (0.008 + spd * 0.03);
+    cloudFlow += dt * (0.10 + spd * 0.05);
     cloudUniforms.uTime.value = cloudTime;
     cloudUniforms.uFlow.value = cloudFlow;
     cloudUniforms.uType.value = cloudType;
