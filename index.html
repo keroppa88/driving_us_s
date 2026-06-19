@@ -717,11 +717,17 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
       dens*=smoothstep(0.11,0.16,dir.y);
       // density-based shading (brighter cores) instead of flat fill
       float lit=smoothstep(cov, cov+0.5, d);
-      // 雲2 は立体感を抑えた水墨画ふうの薄い陰影
-      vec3 col=mix(uCloudColor, uLightColor, distant ? lit*0.5 : lit);
-      col=mix(col, uSkyColor, skyMix);     // aerial perspective / cohesion with sky
-      if(distant) col=mix(col, vec3(1.0), 0.30); // 少し白く
-      float a=dens*uOpacity*(distant?0.65:1.0);
+      vec3 col;
+      if(distant){
+        // 雲2: 白主体(やや陰影)。空色寄せは弱めにして白さを保つ。
+        vec3 bright = mix(uLightColor, vec3(1.0), 0.6);
+        col = mix(bright, uCloudColor, (1.0-lit)*0.30);
+        col = mix(col, uSkyColor, 0.10);
+      } else {
+        col = mix(uCloudColor, uLightColor, lit);
+        col = mix(col, uSkyColor, skyMix);
+      }
+      float a=dens*uOpacity*(distant?0.75:1.0);
       if(a<0.003) discard;
       gl_FragColor=vec4(col, a);
     }`;
