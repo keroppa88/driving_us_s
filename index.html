@@ -671,7 +671,7 @@ const CLOUD_CFG = {
     flowSpeed:0.6, // 走行速度への連動係数
     drift:0.0,     // 左右ドリフト
     shadow:0.8,    // 最暗部の明るさ(1=真っ白, 0.8=グレー2:白8)
-    skyMix:0.06,   // 空の色との同調(大きいほど空色寄り)
+    skyMix:0.35,   // 空の色との同調(大きいほど空色寄り)
     opacity:0.9,
   },
   // 雲2: 白い雲、ゆっくり左右に流れ天頂まで分布
@@ -679,7 +679,7 @@ const CLOUD_CFG = {
     cov:0.50, soft:0.22, scale:0.9, stretch:1.0, warp:2.0, detail:0.5,
     proj:0.06, minY:0.30, band:0.10,
     flowBase:0.0, flowSpeed:0.0, drift:0.35,
-    shadow:0.85, skyMix:0.10, opacity:0.85,
+    shadow:0.85, skyMix:0.35, opacity:0.85,
   },
 };
 // ▲▲▲ ここまで ▲▲▲
@@ -695,13 +695,14 @@ let cloudDrift  = 0;       // accumulated left-right drift
     uWarp:{value:1.6}, uDetail:{value:1.0}, uProj:{value:0.06},
     uMinY:{value:0.22}, uBand:{value:0.05},
     uShadow:{value:0.8}, uSkyMix:{value:0.06}, uOpacity:{value:0.9},
-    uSkyColor:{value:new THREE.Color(0x4a6fa0)},
+    uSkyColor:{value:new THREE.Color(0x4a6fa0)},  // 上空色
+    uSkyHor:{value:new THREE.Color(0xc8daf0)},    // 地平線色
   };
   const cloudVert = `varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
   const cloudFrag = `
     precision highp float;
     uniform float uTime,uFlow,uDrift,uCov,uSoft,uScale,uStretch,uWarp,uDetail,uProj,uMinY,uBand,uShadow,uSkyMix,uOpacity;
-    uniform vec3 uSkyColor;
+    uniform vec3 uSkyColor, uSkyHor;
     varying vec3 vDir;
     float hash(vec2 p){ p=fract(p*vec2(123.34,345.45)); p+=dot(p,p+34.345); return fract(p.x*p.y); }
     float noise(vec2 p){
@@ -730,7 +731,9 @@ let cloudDrift  = 0;       // accumulated left-right drift
       float lit = smoothstep(uCov, uCov+0.5, d);
       vec3 darkest = mix(vec3(0.5), vec3(1.0), uShadow); // 最暗部の明るさ
       vec3 col = mix(darkest, vec3(1.0), lit);
-      col = mix(col, uSkyColor, uSkyMix);
+      // 空の色を反映: 明部は地平線色、暗部は上空色へ寄せる(skyMixで強さ調整)
+      vec3 skyRef = mix(uSkyColor, uSkyHor, lit);
+      col = mix(col, skyRef, uSkyMix);
       float a = dens*uOpacity;
       if(a<0.003) discard;
       gl_FragColor=vec4(col, a);
@@ -756,6 +759,7 @@ let cloudDrift  = 0;       // accumulated left-right drift
     U.uMinY.value=cfg.minY; U.uBand.value=cfg.band;
     U.uShadow.value=cfg.shadow; U.uSkyMix.value=cfg.skyMix; U.uOpacity.value=cfg.opacity;
     U.uSkyColor.value.copy(skyUniforms.topColor.value);
+    U.uSkyHor.value.copy(skyUniforms.horizonColor.value);
     cloudDome.position.copy(camera.position);
   };
 }
