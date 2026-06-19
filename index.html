@@ -699,10 +699,12 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
         p*=scale;
         fl=vec2(0.0, -uFlow);            // -uFlow: features sweep horizon->zenith->behind
       } else {
-        // 雲2: 地平線近くの遠景。1つ1つを大きめ(scale1/4)・少し白く・水墨画ふう
-        scale=0.9; cov=0.70; soft=0.10; skyMix=0.28;
+        // 雲2: 天頂まで分布。大きめ(scale)・少し白く・水墨画ふう。
+        // 天頂で投影が潰れて空かないよう分母をクランプ(max)して上空にも雲を出す。
+        scale=0.9; cov=0.52; soft=0.18; skyMix=0.28;
+        p = dir.xz/max(dir.y,0.30);
         p*=scale; p.x*=0.6;
-        fl=vec2(uTime*0.006, 0.0);
+        fl=vec2(uTime*0.35, 0.0);   // clearly visible left-right drift (dial down to taste)
       }
       vec2 sp=p+fl;
       // domain-warped fbm + finer detail octave for a non-flat, realistic break-up
@@ -711,15 +713,23 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
       float detail=fbm(sp*3.0+4.0*q);
       float d=base*0.8+detail*0.2;
       float dens=smoothstep(cov, cov+soft, d);
-      // どちらも地平線でフェードしつつ天頂まで分布
-      dens*=smoothstep(0.015,0.14,dir.y);
+      // 山の高さの約3倍(仰角 dir.y≈0.11)より上だけに雲を出す。それ以下は雲なし。
+      dens*=smoothstep(0.11,0.16,dir.y);
       // density-based shading (brighter cores) instead of flat fill
       float lit=smoothstep(cov, cov+0.5, d);
-      // 雲2 は立体感を抑えた水墨画ふうの薄い陰影
-      vec3 col=mix(uCloudColor, uLightColor, distant ? lit*0.5 : lit);
-      col=mix(col, uSkyColor, skyMix);     // aerial perspective / cohesion with sky
-      if(distant) col=mix(col, vec3(1.0), 0.30); // 少し白く
-      float a=dens*uOpacity*(distant?0.65:1.0);
+      vec3 col;
+      if(distant){
+        // 雲2: 白主体(やや陰影)。空色寄せは弱めにして白さを保つ。
+        vec3 bright = mix(uLightColor, vec3(1.0), 0.6);
+        col = mix(bright, uCloudColor, (1.0-lit)*0.30);
+        col = mix(col, uSkyColor, 0.10);
+      } else {
+        // 雲1: 最も暗い部分でも グレー2:ホワイト8 程度(黒くしない)
+        vec3 shadeDark = mix(vec3(1.0), vec3(0.5), 0.2);
+        col = mix(shadeDark, vec3(1.0), lit);
+        col = mix(col, uSkyColor, 0.06);
+      }
+      float a=dens*uOpacity*(distant?0.75:1.0);
       if(a<0.003) discard;
       gl_FragColor=vec4(col, a);
     }`;
@@ -737,7 +747,7 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
     cloudTime += dt;
     // 雲1の前方フロー: 基本ドリフト + 走行速度連動
     const spd = (typeof cruiseSpeed !== 'undefined') ? cruiseSpeed : 0;
-    cloudFlow += dt * (0.008 + spd * 0.03);
+    cloudFlow += dt * (2.5 + spd * 0.6);
     cloudUniforms.uTime.value = cloudTime;
     cloudUniforms.uFlow.value = cloudFlow;
     cloudUniforms.uType.value = cloudType;
