@@ -525,18 +525,8 @@ const skyMat = new THREE.ShaderMaterial({
   uniforms: skyUniforms,
   vertexShader:   `varying vec3 vPos; void main(){ vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader: `uniform vec3 topColor,horizonColor,horizonBandColor; varying vec3 vPos;
-    void main(){
-      float h=clamp(normalize(vPos).y,0.0,1.0);
-      float b=smoothstep(0.0,0.18,h);
-      vec3 lo=mix(horizonBandColor,horizonColor,b);
-      vec3 col=mix(lo,topColor,pow(h,0.85));
-      // 極細・濃いめ(暗め)グレーの地平線（淡く浮く帯の代わりに、はっきり細い線）
-      float L=dot(lo,vec3(0.299,0.587,0.114));
-      vec3 lineCol=vec3(L*0.22);
-      float line=smoothstep(0.012,0.0,h);
-      col=mix(col,lineCol,line*0.9);
-      gl_FragColor=vec4(col,1.0);
-    }`,
+    void main(){ float h=clamp(normalize(vPos).y,0.0,1.0); float b=smoothstep(0.0,0.18,h);
+      vec3 lo=mix(horizonBandColor,horizonColor,b); gl_FragColor=vec4(mix(lo,topColor,pow(h,0.85)),1.0); }`,
   side: THREE.BackSide, depthWrite: false, depthTest: false,
 });
 const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(490,32,15), skyMat);
@@ -611,7 +601,10 @@ scene.add(sun);
 //  GROUND
 // ─────────────────────────────────────────────
 const extDesertPlane = (() => {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(1200,1200), new THREE.MeshLambertMaterial({ color:0xf0e3b9 }));
+  // Darker than the GLB terrain's albedo on purpose: AmbientLight is 1.5, so a
+  // light colour would clamp to white and show as a bright line at the horizon
+  // where this far plane peeks out beyond the terrain. This stays a muted tan.
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1200,1200), new THREE.MeshLambertMaterial({ color:0x6b5c44 }));
   m.rotation.x = -Math.PI/2; m.position.set(0,-0.05,-116); m.frustumCulled = false;
   scene.add(m); return m;
 })();
