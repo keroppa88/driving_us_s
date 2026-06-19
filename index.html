@@ -677,6 +677,10 @@ function buildMountainRings() {
   });
 }
 const mountainRings = buildMountainRings();
+// How much the horizon colour is darkened before tinting the mountains, so
+// they stay a visible silhouette instead of washing out to white.
+const MTN_HORIZON_DARKEN = 0.55;
+const _mtnTint = new THREE.Color();
 
 // ─────────────────────────────────────────────
 //  AUDIO / BGM
@@ -1577,8 +1581,9 @@ function animate(){
   for(const ring of mountainRings){
     ring.position.x=camera.position.x; ring.position.z=camera.position.z;
     ring.visible=!skyIsBlack;
-    // Grey base tinted toward the current horizon colour
-    ring.material.color.copy(ring.userData.baseGrey).lerp(skyHorizTarget,ring.userData.tint);
+    // Grey base tinted toward a darkened horizon colour (keeps a visible silhouette)
+    _mtnTint.copy(skyHorizTarget).multiplyScalar(MTN_HORIZON_DARKEN);
+    ring.material.color.copy(ring.userData.baseGrey).lerp(_mtnTint,ring.userData.tint);
   }
   extDesertPlane.position.x=camera.position.x;
 
