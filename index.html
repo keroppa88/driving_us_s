@@ -743,7 +743,7 @@ let cloudDrift  = 0;       // accumulated left-right drift
     }`;
   const cloudMat = new THREE.ShaderMaterial({
     uniforms: U, vertexShader: cloudVert, fragmentShader: cloudFrag,
-    side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: false, fog: false,
+    side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: true, fog: false,
   });
   const cloudDome = new THREE.Mesh(new THREE.SphereGeometry(470,48,24), cloudMat);
   cloudDome.renderOrder = -0.5; cloudDome.frustumCulled = false; cloudDome.visible = false;
