@@ -652,27 +652,56 @@ let starActive = false;
 }
 
 // ─────────────────────────────────────────────
-//  CLOUDS (fbm dome that blends with the dynamic sky colour)
+//  CLOUDS (fbm dome, fully parameter-driven)
 // ─────────────────────────────────────────────
+// ▼▼▼ ここの数値を変えるだけで雲を調整できます ▼▼▼
+const CLOUD_CFG = {
+  // 雲1: 速度連動で奥→手前(天球を越えて)流れる積雲
+  cloud1: {
+    cov:0.40,      // 量(小さいほど多い)
+    soft:0.28,     // 縁のやわらかさ
+    scale:0.85,    // 粒の細かさ(小さいほど雲が大きい)
+    stretch:1.0,   // 横方向の引き伸ばし(1=なし)
+    warp:1.6,      // 形のうねり(大きいほど複雑)
+    detail:1.0,    // 細部の量(0〜1)
+    proj:0.06,     // 投影クランプ(小さいほど地平線方向に伸びる)
+    minY:0.22,     // 雲が出る最低の高さ(仰角, 大きいほど高い位置から)
+    band:0.05,     // 出始めのフェード幅
+    flowBase:2.5,  // 停車時の流れ速度
+    flowSpeed:0.6, // 走行速度への連動係数
+    drift:0.0,     // 左右ドリフト
+    shadow:0.8,    // 最暗部の明るさ(1=真っ白, 0.8=グレー2:白8)
+    skyMix:0.06,   // 空の色との同調(大きいほど空色寄り)
+    opacity:0.9,
+  },
+  // 雲2: 白い雲、ゆっくり左右に流れ天頂まで分布
+  cloud2: {
+    cov:0.50, soft:0.22, scale:0.9, stretch:1.0, warp:2.0, detail:0.5,
+    proj:0.06, minY:0.11, band:0.05,
+    flowBase:0.0, flowSpeed:0.0, drift:0.35,
+    shadow:0.85, skyMix:0.10, opacity:0.85,
+  },
+};
+// ▲▲▲ ここまで ▲▲▲
 let cloudActive = false;   // clouds shown
-let cloudType   = 1;       // 1 = cumulus(雲1), 2 = cirrus(雲2)
+let cloudType   = 1;       // 1 = 雲1, 2 = 雲2
 let cloudTime   = 0;
-let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
+let cloudFlow   = 0;       // accumulated forward flow
+let cloudDrift  = 0;       // accumulated left-right drift
 {
-  const cloudUniforms = {
-    uTime:      { value: 0 },
-    uFlow:      { value: 0 },   // speed-driven forward flow for 雲1
-    uType:      { value: 1 },
-    uOpacity:   { value: 0.9 },
-    uSkyColor:  { value: new THREE.Color(0x4a6fa0) },
-    uCloudColor:{ value: new THREE.Color(0x8090a0) }, // shadow side
-    uLightColor:{ value: new THREE.Color(0xffffff) }, // lit side
+  const U = {
+    uTime:{value:0}, uFlow:{value:0}, uDrift:{value:0},
+    uCov:{value:0.4}, uSoft:{value:0.28}, uScale:{value:0.85}, uStretch:{value:1.0},
+    uWarp:{value:1.6}, uDetail:{value:1.0}, uProj:{value:0.06},
+    uMinY:{value:0.22}, uBand:{value:0.05},
+    uShadow:{value:0.8}, uSkyMix:{value:0.06}, uOpacity:{value:0.9},
+    uSkyColor:{value:new THREE.Color(0x4a6fa0)},
   };
   const cloudVert = `varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
   const cloudFrag = `
     precision highp float;
-    uniform float uTime, uFlow, uType, uOpacity;
-    uniform vec3 uSkyColor, uCloudColor, uLightColor;
+    uniform float uTime,uFlow,uDrift,uCov,uSoft,uScale,uStretch,uWarp,uDetail,uProj,uMinY,uBand,uShadow,uSkyMix,uOpacity;
+    uniform vec3 uSkyColor;
     varying vec3 vDir;
     float hash(vec2 p){ p=fract(p*vec2(123.34,345.45)); p+=dot(p,p+34.345); return fract(p.x*p.y); }
     float noise(vec2 p){
@@ -688,75 +717,46 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
     }
     void main(){
       vec3 dir=normalize(vDir);
-      if(dir.y<=0.015) discard;
-      bool distant = uType>1.5;          // 雲2 = 遠景の帯
-      // sky-plane projection (perspective: clouds grow toward the horizon = 天球に沿う)
-      vec2 p = dir.xz/dir.y;
-      vec2 fl; float scale, cov, soft, skyMix;
-      if(!distant){
-        // 雲1: 奥(地平線前方)から手前へ＝天球を越えて上へ流れる。速度連動(uFlow)。
-        scale=0.85; cov=0.40; soft=0.28; skyMix=0.12;
-        p*=scale;
-        fl=vec2(0.0, -uFlow);            // -uFlow: features sweep horizon->zenith->behind
-      } else {
-        // 雲2: 天頂まで分布。大きめ(scale)・少し白く・水墨画ふう。
-        // 天頂で投影が潰れて空かないよう分母をクランプ(max)して上空にも雲を出す。
-        scale=0.9; cov=0.52; soft=0.18; skyMix=0.28;
-        p = dir.xz/max(dir.y,0.30);
-        p*=scale; p.x*=0.6;
-        fl=vec2(uTime*0.35, 0.0);   // clearly visible left-right drift (dial down to taste)
-      }
-      vec2 sp=p+fl;
-      // domain-warped fbm + finer detail octave for a non-flat, realistic break-up
-      vec2 q=vec2(fbm(sp), fbm(sp+vec2(3.1,6.7)));
-      float base=fbm(sp+1.6*q);
-      float detail=fbm(sp*3.0+4.0*q);
-      float d=base*0.8+detail*0.2;
-      float dens=smoothstep(cov, cov+soft, d);
-      // 山の高さの約3倍(仰角 dir.y≈0.11)より上だけに雲を出す。それ以下は雲なし。
-      dens*=smoothstep(0.11,0.16,dir.y);
-      // density-based shading (brighter cores) instead of flat fill
-      float lit=smoothstep(cov, cov+0.5, d);
-      vec3 col;
-      if(distant){
-        // 雲2: 白主体(やや陰影)。空色寄せは弱めにして白さを保つ。
-        vec3 bright = mix(uLightColor, vec3(1.0), 0.6);
-        col = mix(bright, uCloudColor, (1.0-lit)*0.30);
-        col = mix(col, uSkyColor, 0.10);
-      } else {
-        // 雲1: 最も暗い部分でも グレー2:ホワイト8 程度(黒くしない)
-        vec3 shadeDark = mix(vec3(1.0), vec3(0.5), 0.2);
-        col = mix(shadeDark, vec3(1.0), lit);
-        col = mix(col, uSkyColor, 0.06);
-      }
-      float a=dens*uOpacity*(distant?0.75:1.0);
+      if(dir.y<=0.01) discard;
+      vec2 p = dir.xz/max(dir.y,uProj);
+      p *= uScale; p.x *= uStretch;
+      vec2 sp = p + vec2(uDrift, -uFlow);
+      vec2 q = vec2(fbm(sp), fbm(sp+vec2(3.1,6.7)));
+      float base = fbm(sp + uWarp*q);
+      float detail = fbm(sp*3.0 + 4.0*q);
+      float d = mix(base, base*0.7+detail*0.3, uDetail);
+      float dens = smoothstep(uCov, uCov+uSoft, d);
+      dens *= smoothstep(uMinY, uMinY+uBand, dir.y);   // 最低の高さより上だけ
+      float lit = smoothstep(uCov, uCov+0.5, d);
+      vec3 darkest = mix(vec3(0.5), vec3(1.0), uShadow); // 最暗部の明るさ
+      vec3 col = mix(darkest, vec3(1.0), lit);
+      col = mix(col, uSkyColor, uSkyMix);
+      float a = dens*uOpacity;
       if(a<0.003) discard;
       gl_FragColor=vec4(col, a);
     }`;
   const cloudMat = new THREE.ShaderMaterial({
-    uniforms: cloudUniforms, vertexShader: cloudVert, fragmentShader: cloudFrag,
+    uniforms: U, vertexShader: cloudVert, fragmentShader: cloudFrag,
     side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: false, fog: false,
   });
   const cloudDome = new THREE.Mesh(new THREE.SphereGeometry(470,48,24), cloudMat);
   cloudDome.renderOrder = -0.5; cloudDome.frustumCulled = false; cloudDome.visible = false;
   scene.add(cloudDome);
-  const _white = new THREE.Color(0xffffff);
   window._updateClouds = function(dt){
     cloudDome.visible = cloudActive;
     if(!cloudActive) return;
-    cloudTime += dt;
-    // 雲1の前方フロー: 基本ドリフト + 走行速度連動
+    const cfg = (cloudType===2) ? CLOUD_CFG.cloud2 : CLOUD_CFG.cloud1;
     const spd = (typeof cruiseSpeed !== 'undefined') ? cruiseSpeed : 0;
-    cloudFlow += dt * (2.5 + spd * 0.6);
-    cloudUniforms.uTime.value = cloudTime;
-    cloudUniforms.uFlow.value = cloudFlow;
-    cloudUniforms.uType.value = cloudType;
+    cloudTime  += dt;
+    cloudFlow  += dt * (cfg.flowBase + spd*cfg.flowSpeed);
+    cloudDrift += dt * cfg.drift;
+    U.uTime.value=cloudTime; U.uFlow.value=cloudFlow; U.uDrift.value=cloudDrift;
+    U.uCov.value=cfg.cov; U.uSoft.value=cfg.soft; U.uScale.value=cfg.scale; U.uStretch.value=cfg.stretch;
+    U.uWarp.value=cfg.warp; U.uDetail.value=cfg.detail; U.uProj.value=cfg.proj;
+    U.uMinY.value=cfg.minY; U.uBand.value=cfg.band;
+    U.uShadow.value=cfg.shadow; U.uSkyMix.value=cfg.skyMix; U.uOpacity.value=cfg.opacity;
+    U.uSkyColor.value.copy(skyUniforms.topColor.value);
     cloudDome.position.copy(camera.position);
-    // Sync colours with the current (lerped) sky so clouds match any sky colour
-    const top = skyUniforms.topColor.value, hor = skyUniforms.horizonColor.value;
-    cloudUniforms.uSkyColor.value.copy(top);
-    cloudUniforms.uCloudColor.value.copy(top).lerp(hor,0.5).multiplyScalar(0.85);
-    cloudUniforms.uLightColor.value.copy(hor).lerp(_white,0.6);
   };
 }
 
