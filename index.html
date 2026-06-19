@@ -657,9 +657,11 @@ let starActive = false;
 let cloudActive = false;   // clouds shown
 let cloudType   = 1;       // 1 = cumulus(雲1), 2 = cirrus(雲2)
 let cloudTime   = 0;
+let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
 {
   const cloudUniforms = {
     uTime:      { value: 0 },
+    uFlow:      { value: 0 },   // speed-driven forward flow for 雲1
     uType:      { value: 1 },
     uOpacity:   { value: 0.9 },
     uSkyColor:  { value: new THREE.Color(0x4a6fa0) },
@@ -669,7 +671,7 @@ let cloudTime   = 0;
   const cloudVert = `varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
   const cloudFrag = `
     precision highp float;
-    uniform float uTime, uType, uOpacity;
+    uniform float uTime, uFlow, uType, uOpacity;
     uniform vec3 uSkyColor, uCloudColor, uLightColor;
     varying vec3 vDir;
     float hash(vec2 p){ p=fract(p*vec2(123.34,345.45)); p+=dot(p,p+34.345); return fract(p.x*p.y); }
@@ -692,13 +694,13 @@ let cloudTime   = 0;
       vec2 p = dir.xz/dir.y;
       vec2 fl; float scale, cov, soft, skyMix;
       if(!distant){
-        // 雲1: 立体的な積雲、奥→手前へ流れ、空の約半分を覆う
+        // 雲1: 奥(地平線前方)から手前へ＝天球を越えて上へ流れる。速度連動(uFlow)。
         scale=0.85; cov=0.40; soft=0.28; skyMix=0.12;
         p*=scale;
-        fl=vec2(0.0, uTime*0.02);        // flow far -> near (along view depth)
+        fl=vec2(0.0, -uFlow);            // -uFlow: features sweep horizon->zenith->behind
       } else {
-        // 雲2: 地平線近くの遠景に小さく(空の約5%)、水墨画レベルの薄い陰影
-        scale=3.5; cov=0.70; soft=0.10; skyMix=0.40;
+        // 雲2: 地平線近くの遠景。1つ1つを大きめ(scale1/4)・少し白く・水墨画ふう
+        scale=0.9; cov=0.70; soft=0.10; skyMix=0.28;
         p*=scale; p.x*=0.6;
         fl=vec2(uTime*0.006, 0.0);
       }
@@ -719,6 +721,7 @@ let cloudTime   = 0;
       // 雲2 は立体感を抑えた水墨画ふうの薄い陰影
       vec3 col=mix(uCloudColor, uLightColor, distant ? lit*0.5 : lit);
       col=mix(col, uSkyColor, skyMix);     // aerial perspective / cohesion with sky
+      if(distant) col=mix(col, vec3(1.0), 0.30); // 少し白く
       float a=dens*uOpacity*(distant?0.65:1.0);
       if(a<0.003) discard;
       gl_FragColor=vec4(col, a);
@@ -735,7 +738,11 @@ let cloudTime   = 0;
     cloudDome.visible = cloudActive;
     if(!cloudActive) return;
     cloudTime += dt;
+    // 雲1の前方フロー: 基本ドリフト + 走行速度連動
+    const spd = (typeof cruiseSpeed !== 'undefined') ? cruiseSpeed : 0;
+    cloudFlow += dt * (0.008 + spd * 0.03);
     cloudUniforms.uTime.value = cloudTime;
+    cloudUniforms.uFlow.value = cloudFlow;
     cloudUniforms.uType.value = cloudType;
     cloudDome.position.copy(camera.position);
     // Sync colours with the current (lerped) sky so clouds match any sky colour
