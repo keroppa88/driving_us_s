@@ -513,7 +513,10 @@ window.addEventListener('resize', onResize);
 // ─────────────────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = null;
-scene.fog = new THREE.FogExp2(0xc8daf0, 0.0075);
+// Fog colour = desert brown (NOT the sky colour) so distant ground stays brown
+// and meets the sky as a crisp horizon instead of hazing into it.
+const GROUND_FOG_COLOR = new THREE.Color(0x8a7048);
+scene.fog = new THREE.FogExp2(GROUND_FOG_COLOR.getHex(), 0.0075);
 
 // Sky gradient shader
 const skyUniforms = {
@@ -1596,7 +1599,7 @@ function animate(){
   skyUniforms.topColor.value.lerp(skyTopTarget,sp);
   skyUniforms.horizonColor.value.lerp(skyHorizTarget,sp);
   skyUniforms.horizonBandColor.value.lerp(skyHorizBandTarget,sp);
-  scene.fog.color.lerp(skyHorizTarget,sp);
+  scene.fog.color.lerp(GROUND_FOG_COLOR,sp);
   skyMesh.position.copy(camera.position);
 
   window._updateRain();
