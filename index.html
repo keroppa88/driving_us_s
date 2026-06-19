@@ -2,17 +2,13 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <meta http-equiv="Cache-Control" content="no-store">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Driving in the USA</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
 html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; background:#111; display:flex; justify-content:center; align-items:center; font-family:'Courier New',monospace; }
 
-/* ── GameBoy body ── */
 #gameboy {
   width:  min(100vw, calc(100dvh * 0.565));
   height: min(100dvh, calc(100vw / 0.565));
@@ -29,7 +25,6 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
   opacity:0.07; mix-blend-mode:overlay;
 }
 
-/* ── Screen wrapper ── */
 #screen-wrapper {
   flex: 0 0 54%;
   background: #1e1e1e;
@@ -52,7 +47,6 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
   text-shadow:0 0 8px rgba(80,200,80,.3); line-height:1;
 }
 
-/* HUD */
 #hud {
   position:absolute; top:9px; left:11px; right:11px;
   display:flex; justify-content:space-between; flex-wrap:wrap; gap:2px;
@@ -69,21 +63,28 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
   white-space:normal; word-break:break-word;
   text-align:center; line-height:1.2;
 }
+#dpad-center-dot { color:#555; }
+#dpad-center.pl-active #dpad-center-dot { color:#ff2020; text-shadow:0 0 8px #ff0000,0 0 16px #ff0000; }
+.pl-name-small { font-size:0.7em; }
 
-/* Overlays inside screen */
 #loading-screen, #start-overlay, #sound-panel {
   position:absolute; inset:0; z-index:20; display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   border-radius:9px; padding:12px;
 }
 #loading-screen { background:rgba(10,20,10,.95); color:#8dc88d; font-size:clamp(9px,2.5vw,13px); gap:8px; }
-#start-overlay  { background:rgba(8,15,8,.92); color:#aadaaa; gap:7px; }
-#start-overlay h1 { font-size:clamp(22px,6vw,32px); color:#c8e8c8; letter-spacing:.05em; text-align:center; margin-bottom:2px; }
+#start-overlay  { background:rgba(8,15,8,.92); color:#aadaaa; justify-content:space-between; }
+#start-overlay h1 { font-size:24px; color:#c8e8c8; letter-spacing:.05em; text-align:center; margin-bottom:2px; white-space:nowrap; }
+#overlay-top { display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:22%; }
+#overlay-main { display:flex; flex-direction:column; align-items:center; gap:30px; }
+#overlay-bottom { display:flex; justify-content:flex-end; width:100%; }
 #start-overlay .ctrl-hint { font-size:clamp(6px,1.6vw,8.5px); color:#669966; text-align:center; line-height:1.6; }
+
 .vol-row-sm { display:flex; align-items:center; gap:6px; width:100%; }
 .vol-row-sm label { font-size:clamp(6px,1.5vw,8px); color:#88aa88; min-width:4em; text-align:right; }
 .vol-row-sm input[type=range] { flex:1; accent-color:#6a8; height:14px; cursor:pointer; }
 .vol-row-sm span { font-size:clamp(6px,1.5vw,8px); color:#99bb99; min-width:2.5em; }
+
 #audio-load-msg { font-size:clamp(12px,3vw,16px); color:#557755; text-align:center; }
 #start-btn {
   margin-top:4px; padding:6px 18px;
@@ -93,24 +94,26 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 }
 #start-btn:disabled { opacity:.4; cursor:default; }
 #start-btn:not(:disabled):active { background:rgba(100,180,100,.15); }
-#explain-btn {
-  margin-top:6px; padding:4px 16px;
+
+#usa-btn {
+  display:block; padding:3px 10px; text-decoration:none;
   background:transparent; color:#88bb88; border:1px solid #335533;
-  font-family:inherit; font-size:clamp(14px,3.6vw,20px); cursor:pointer; letter-spacing:.05em;
+  font-family:inherit; font-size:12px; cursor:pointer; letter-spacing:.03em; white-space:nowrap;
+  border-radius:4px;
+}
+#usa-btn:active { background:rgba(100,180,100,.15); }
+#explain-btn {
+  padding:4px 14px;
+  background:transparent; color:#88bb88; border:1px solid #335533;
+  font-family:inherit; font-size:clamp(16px,4.1vw,23px); cursor:pointer; letter-spacing:.05em;
   border-radius:4px;
 }
 #explain-btn:active { background:rgba(80,160,80,.15); }
-#driving-tokyo-btn {
-  position:absolute; bottom:10px; right:10px;
-  padding:3px 8px;
-  background:transparent; color:#88bb88; border:1px solid #335533;
-  font-family:inherit; font-size:12px; cursor:pointer; letter-spacing:.03em;
-  border-radius:4px; text-decoration:none; display:inline-block;
-}
-#driving-tokyo-btn:active { background:rgba(80,160,80,.15); }
+
 #explain-panel { position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; background:#090f09; gap:10px; padding:12px; }
 #explain-content { flex:1; overflow-y:auto; overflow-x:hidden; width:100%; display:flex; flex-direction:column; gap:12px; align-items:center; touch-action:pan-y; -webkit-overflow-scrolling:touch; }
 #explain-content img { width:100%; max-width:640px; display:block; border-radius:4px; }
+
 #explain-back-btn {
   flex-shrink:0; padding:5px 20px;
   background:transparent; color:#aaddaa; border:1px solid #446644;
@@ -118,6 +121,7 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
   border-radius:4px;
 }
 #explain-back-btn:active { background:rgba(100,180,100,.15); }
+
 #lightbox {
   position:fixed; inset:0; z-index:10001; background:rgba(0,0,0,.97);
   overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-x pan-y;
@@ -125,7 +129,6 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 }
 #lightbox img { display:block; width:auto; height:auto; min-width:100%; }
 
-/* Sound panel */
 #sound-panel { background:rgba(8,15,8,.95); z-index:18; display:none; gap:14px; touch-action:auto; }
 #sound-panel h2 { font-size:clamp(16px,4vw,22px); color:#99cc99; }
 .vol-block { width:100%; display:flex; flex-direction:column; gap:6px; }
@@ -133,7 +136,6 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 .vol-block-slider { display:flex; align-items:center; gap:8px; width:100%; }
 .vol-block-slider span { font-size:clamp(10px,2.5vw,14px); color:#99bb99; min-width:2.8em; }
 
-/* Now-playing / connecting bar */
 #connecting-bar {
   position:absolute; top:25%; left:9px; right:9px;
   z-index:10; pointer-events:none;
@@ -144,13 +146,11 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
   white-space:normal; word-break:break-word; line-height:1.2;
 }
 
-/* ── Controls area ── */
-#controls { flex:1; display:flex; flex-direction:column; gap:8px; }
-#controls-mid { flex:4; display:flex; align-items:stretch; gap:8px; }
+#controls { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:8px; }
+#controls-mid { flex:3; min-height:0; display:flex; align-items:stretch; gap:20px; overflow:hidden; }
 
-/* D-pad housing */
 #dpad-housing {
-  align-self:center; height:75%; aspect-ratio:1; flex-shrink:0; max-width:210px;
+  align-self:flex-end; height:81%; aspect-ratio:1; flex-shrink:0; max-width:210px;
   background:none; border:none; padding:0; box-shadow:none; border-radius:0;
 }
 #dpad { width:100%; height:100%; display:grid; grid-template-columns:1fr 1.1fr 1fr; grid-template-rows:1fr 1.1fr 1fr; gap:2px; }
@@ -162,12 +162,10 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 }
 .dpad-btn.pressed, .dpad-btn:active { background:linear-gradient(145deg,#111,#2a2a2a); box-shadow:inset 2px 2px 5px rgba(0,0,0,.7); }
 .dpad-arrow { color:#888; font-size:clamp(11px,3.5vw,18px); pointer-events:none; }
+
 #dpad-up     { grid-area:1/2; border-radius:5px 5px 2px 2px; }
 #dpad-left   { grid-area:2/1; border-radius:5px 2px 2px 5px; }
 #dpad-center { grid-area:2/2; border-radius:4px; background:#1a1a1a; }
-#dpad-center-dot { color:#555; }
-#dpad-center.pl-active #dpad-center-dot { color:#eeffee; text-shadow:0 0 6px #aaffaa; }
-.pl-name-small { font-size:0.7em; }
 #dpad-right  { grid-area:2/3; border-radius:2px 5px 5px 2px; }
 #dpad-down   { grid-area:3/2; border-radius:2px 2px 5px 5px; }
 #dpad-corner-tl { grid-area:1/1; background:transparent!important; box-shadow:none!important; }
@@ -175,28 +173,83 @@ html, body { width:100%; height:100dvh; min-height:100vh; overflow:hidden; backg
 #dpad-corner-bl { grid-area:3/1; background:transparent!important; box-shadow:none!important; }
 #dpad-corner-br { grid-area:3/3; background:transparent!important; box-shadow:none!important; }
 
-/* Sliders */
-#sliders-area { flex:1; display:flex; flex-direction:column; justify-content:center; }
-.slider-panel {
-  background:linear-gradient(160deg,#b8b49e,#a8a490); border-radius:12px; padding:10px 14px 8px;
-  box-shadow:inset 3px 3px 7px rgba(0,0,0,.28), inset -1px -1px 3px rgba(255,255,255,.32);
+#sliders-area { flex:1; align-self:flex-end; display:flex; flex-direction:column; justify-content:flex-start; gap:3px; padding-left:8%; padding-right:5%; }
+#color-sliders-row { display:flex; flex-direction:row; align-items:stretch; gap:5px; }
+#slider-container {
+  flex:1;
+  background:linear-gradient(160deg,#a8a48e,#989080);
+  border-radius:12px; padding:2px 8px 3px;
+  box-shadow:inset 4px 4px 9px rgba(0,0,0,.38), inset -1px -1px 3px rgba(255,255,255,.22);
+  display:flex; flex-direction:column; gap:2px;
 }
+.slider-col { display:flex; flex-direction:column; }
+.slider-inline { display:flex; align-items:center; gap:4px; }
+.slider-inline input[type=range] { flex:1; }
+.color-side-label { font-size:clamp(10px,2.5vw,14px); font-weight:bold; color:#2a2818; white-space:nowrap; }
+#sky-btns-col { display:flex; flex-direction:column; gap:4px; width:clamp(28px,9vw,40px); flex-shrink:0; align-items:center; justify-content:space-around; }
+#sky-btns-col .toggle-btn { width:100%; height:auto; aspect-ratio:1; border-radius:50%; }
 .tick-row { height:8px; padding:0 2px; margin-bottom:6px; background:repeating-linear-gradient(to right,#888 0px,#888 1px,transparent 1px,transparent 7px); background-size:calc(100%/13) 100%; }
+#slider-container .tick-row { height:2px; margin-bottom:1px; }
+#speed-row { display:flex; flex-direction:row; align-items:center; gap:5px; }
+#speed-slider-wrap { flex:1; }
+.speed-side-label { width:clamp(28px,9vw,40px); flex-shrink:0; text-align:center; font-size:clamp(11px,2.8vw,15px); font-weight:bold; color:#2a2818; }
+
 input[type=range] { width:100%; height:56px; -webkit-appearance:none; appearance:none; background:transparent; cursor:pointer; }
 input[type=range]::-webkit-slider-runnable-track { height:5px; background:linear-gradient(to right,#666,#888); border-radius:3px; box-shadow:inset 2px 2px 5px rgba(0,0,0,.6); }
 input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance:none; width:18px; height:52px;
+  -webkit-appearance:none; width:9px; height:26px;
   background:repeating-linear-gradient(to bottom,#444 0px,#444 2px,#111 2px,#111 5px);
-  border-radius:3px; margin-top:-24px;
+  border-radius:3px; margin-top:-11px;
   box-shadow:2px 2px 6px rgba(0,0,0,.7), -1px -1px 2px rgba(255,255,255,.15);
 }
 input[type=range]::-moz-range-track { height:5px; background:#777; border-radius:3px; }
-input[type=range]::-moz-range-thumb { width:18px; height:52px; background:repeating-linear-gradient(to bottom,#444 0px,#444 2px,#111 2px,#111 5px); border-radius:3px; border:none; box-shadow:2px 2px 6px rgba(0,0,0,.7); }
-.slider-label { text-align:center; font-size:clamp(13px,3.2vw,16px); color:#1a1810; letter-spacing:.05em; margin-top:4px; }
+input[type=range]::-moz-range-thumb { width:9px; height:26px; background:repeating-linear-gradient(to bottom,#444 0px,#444 2px,#111 2px,#111 5px); border-radius:3px; border:none; box-shadow:2px 2px 6px rgba(0,0,0,.7); }
+#slider-container input[type=range] { height:28px; }
+#slider-container input[type=range]::-webkit-slider-thumb { width:9px; height:24px; margin-top:-10px; }
+#slider-container input[type=range]::-moz-range-thumb { width:9px; height:24px; }
+#speed-row input[type=range] { height:33px; }
+#speed-row input[type=range]::-webkit-slider-thumb { width:11px; height:24px; margin-top:-10px; }
+#speed-row input[type=range]::-moz-range-thumb { width:11px; height:24px; }
 
-/* Bottom buttons */
-#buttons-row { flex:1; display:flex; justify-content:space-around; align-items:center; padding:0 2px; }
-.action-btn-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.slider-label { text-align:center; font-size:clamp(13px,3.2vw,16px); color:#1a1810; letter-spacing:.05em; margin-top:4px; }
+#slider-container .slider-label { font-size:clamp(12px,3vw,16px); margin-top:2px; color:#2a2818; font-weight:bold; }
+#speed-row .slider-label { font-size:clamp(9px,2.3vw,12px); margin-top:1px; color:#2a2818; }
+
+.toggle-btn {
+  width:100%; height:clamp(28px,8.5vw,38px); border:none; border-radius:6px;
+  background:#0d0d0d;
+  box-shadow:inset 1px 1px 4px rgba(0,0,0,.95), 2px 2px 5px rgba(0,0,0,.55);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:color .15s; color:#6aba6a;
+}
+.toggle-btn svg { width:55%; height:55%; }
+.toggle-btn:active { box-shadow:inset 3px 3px 8px rgba(0,0,0,.95); transform:scale(.96); }
+.toggle-btn.active { color:#ffffff; }
+.toggle-label { font-size:clamp(7px,1.9vw,10px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
+.sky-switch {
+  position:relative; display:flex; align-items:center; overflow:hidden;
+  width:100%; height:clamp(28px,8.5vw,38px);
+  background:#2d5a2d; border-radius:99px;
+  box-shadow:inset 2px 2px 5px rgba(0,0,0,.6), inset -1px -1px 3px rgba(255,255,255,.1);
+  cursor:pointer; transition:background .2s;
+}
+.sky-switch.on { background:#3a7a3a; }
+.sky-knob {
+  position:absolute; top:3px; bottom:3px; left:3px;
+  width:calc(50% - 4px);
+  background:#cc2222; border-radius:99px;
+  box-shadow:1px 1px 4px rgba(0,0,0,.7);
+  transition:transform .2s; pointer-events:none; z-index:1;
+}
+.sky-switch.on .sky-knob { transform:translateX(calc(100% + 2px)); }
+.sky-sw-label {
+  position:relative; z-index:2; flex:1; text-align:center;
+  font-size:clamp(10px,2.8vw,14px); font-weight:bold; color:#fff;
+  pointer-events:none; line-height:1;
+}
+
+#buttons-row { flex:0.7; display:flex; justify-content:space-evenly; align-items:center; padding:0 2px; }
+.action-btn-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
 .action-btn {
   width:clamp(38px,12.5vw,54px); height:clamp(38px,12.5vw,54px); border-radius:50%; border:none;
   background:linear-gradient(145deg,#2e2e2e,#111);
@@ -209,35 +262,37 @@ input[type=range]::-moz-range-thumb { width:18px; height:52px; background:repeat
 .action-btn svg { width:44%; height:44%; }
 .btn-label { font-size:clamp(13px,3.5vw,20px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
 
-/* ── Screen-only mode (state 2: game screen fills viewport, no interaction) ── */
 body.screen-only #gameboy { width:100vw; height:100dvh; padding:0; border-radius:0; box-shadow:none; background:#000; gap:0; }
 body.screen-only #gameboy::after { display:none; }
 body.screen-only #screen-wrapper { flex:1 1 100%; border-radius:0; box-shadow:none; cursor:pointer; }
 body.screen-only #controls { display:none; }
+body.screen-only #buttons-row { display:none; }
 body.screen-only #screen-wrapper::before { display:none; }
 </style>
 </head>
 <body>
 
-<!-- ── GameBoy ── -->
 <div id="gameboy">
-
-  <!-- Screen -->
   <div id="screen-wrapper">
-    <!-- Loading -->
     <div id="loading-screen">
       <div>ロード中...</div>
-      <div id="load-progress" style="font-size:clamp(6px,1.5vw,8px);color:#557755;"></div>
+      <div id="load-progress"></div>
     </div>
-    <!-- Title overlay -->
+
     <div id="start-overlay" style="display:none">
-      <h1>Driving in the USA</h1>
-      <div id="audio-load-msg">読み込み中・・・</div>
-      <button id="start-btn" disabled>DRIVE START</button>
-      <button id="explain-btn">説明</button>
-      <a id="driving-tokyo-btn" href="https://keroppa88.github.io/driving_tokyo_s/" target="_blank" rel="noopener">Driving in Tokyo</a>
+      <div id="overlay-top">
+        <h1>Driving in the USA</h1>
+        <div id="audio-load-msg">読み込み中・・・</div>
+      </div>
+      <div id="overlay-main">
+        <button id="start-btn" disabled>DRIVE START</button>
+        <button id="explain-btn">説明</button>
+      </div>
+      <div id="overlay-bottom">
+        <a id="usa-btn" href="https://keroppa88.github.io/driving_tokyo_s/" target="_blank" rel="noopener">Driving in Tokyo</a>
+      </div>
     </div>
-    <!-- Sound settings panel -->
+
     <div id="sound-panel">
       <h2>── 音量設定 ──</h2>
       <div class="vol-block">
@@ -261,40 +316,71 @@ body.screen-only #screen-wrapper::before { display:none; }
     <div id="hud">
       <span><span id="hud-speed">0</span>km/h</span>
       <span id="hud-auto" style="display:none;color:#6aba6a;">AUTO</span>
-      <span id="hud-coords" style="opacity:.7"></span>
     </div>
     <div id="track-bar"></div>
     <div id="connecting-bar"></div>
-  </div><!-- /screen-wrapper -->
+  </div>
 
-  <!-- Controls -->
   <div id="controls">
     <div id="controls-mid">
-      <!-- D-pad -->
       <div id="dpad-housing">
         <div id="dpad">
           <div id="dpad-corner-tl"></div>
-          <div id="dpad-up"     class="dpad-btn" data-dir="up">   <span class="dpad-arrow">▲</span></div>
+          <div id="dpad-up" class="dpad-btn" data-dir="up"><span class="dpad-arrow">▲</span></div>
           <div id="dpad-corner-tr"></div>
-          <div id="dpad-left"   class="dpad-btn" data-dir="left"> <span class="dpad-arrow">◀</span></div>
+          <div id="dpad-left" class="dpad-btn" data-dir="left"><span class="dpad-arrow">◀</span></div>
           <div id="dpad-center" class="dpad-btn" data-dir="center"><span class="dpad-arrow" id="dpad-center-dot">●</span></div>
-          <div id="dpad-right"  class="dpad-btn" data-dir="right"><span class="dpad-arrow">▶</span></div>
+          <div id="dpad-right" class="dpad-btn" data-dir="right"><span class="dpad-arrow">▶</span></div>
           <div id="dpad-corner-bl"></div>
-          <div id="dpad-down"   class="dpad-btn" data-dir="down"> <span class="dpad-arrow">▼</span></div>
+          <div id="dpad-down" class="dpad-btn" data-dir="down"><span class="dpad-arrow">▼</span></div>
           <div id="dpad-corner-br"></div>
         </div>
       </div>
-      <!-- Sliders -->
+
       <div id="sliders-area">
-        <div class="slider-panel">
-          <div class="tick-row"></div>
-          <input type="range" id="speed-slider" min="0" max="100" value="0">
-          <div class="slider-label">スピード</div>
+        <div id="color-sliders-row">
+          <div id="slider-container">
+            <div class="slider-col">
+              <div class="tick-row"></div>
+              <div class="slider-inline">
+                <input type="range" id="sky-color-slider" min="0" max="100" value="59">
+                <span class="color-side-label">色調</span>
+              </div>
+            </div>
+            <div class="slider-col">
+              <div class="tick-row"></div>
+              <div class="slider-inline">
+                <input type="range" id="sky-bright-slider" min="0" max="100" value="89">
+                <span class="color-side-label">明暗</span>
+              </div>
+            </div>
+          </div>
+          <div id="sky-btns-col">
+            <button class="toggle-btn" id="btn-star">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/>
+              </svg>
+            </button>
+            <button class="toggle-btn" id="btn-rain">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 12a11.05 11.05 0 0 0-22 0z"/>
+                <path d="M12 12v5.5a2.5 2.5 0 0 1-5 0"/>
+                <line x1="7" y1="17" x2="6.5" y2="20"/>
+                <line x1="17" y1="17" x2="16.5" y2="20"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="speed-row">
+          <div id="speed-slider-wrap">
+            <input type="range" id="speed-slider" min="0" max="100" value="0">
+          </div>
+          <span class="speed-side-label">速度</span>
+        </div>
         </div>
       </div>
-    </div><!-- /controls-mid -->
+    </div>
 
-    <!-- Bottom buttons -->
     <div id="buttons-row">
       <div class="action-btn-wrap">
         <span class="btn-label" id="lbl-play">再生</span>
@@ -335,18 +421,17 @@ body.screen-only #screen-wrapper::before { display:none; }
         </button>
       </div>
       <div class="action-btn-wrap">
-        <span class="btn-label">全画面</span>
-        <button class="action-btn" id="btn-fs">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M21 16v3a2 2 0 01-2 2h-3M3 16v3a2 2 0 002 2h3"/>
+        <span class="btn-label" id="lbl-color">上空色</span>
+        <button class="action-btn active" id="btn-fs">
+          <svg id="fs-icon" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>
           </svg>
         </button>
       </div>
     </div>
   </div>
-</div><!-- /gameboy -->
+</div>
 
-<!-- Explanation full-screen overlay -->
 <div id="explain-panel" style="display:none">
   <div id="explain-content">
     <img src="cm01.png" alt="説明1">
@@ -355,12 +440,10 @@ body.screen-only #screen-wrapper::before { display:none; }
   <button id="explain-back-btn">戻る</button>
 </div>
 
-<!-- Image lightbox -->
 <div id="lightbox" style="display:none">
   <img id="lightbox-img" src="" alt="">
 </div>
 
-<!-- YouTube player (off-screen) -->
 <div style="position:fixed;top:-400px;left:-400px;width:400px;height:300px;pointer-events:none">
   <div id="yt-container"></div>
 </div>
@@ -392,7 +475,7 @@ const hudAutoEl    = document.getElementById('hud-auto');
 const soundPanel   = document.getElementById('sound-panel');
 
 // ─────────────────────────────────────────────
-//  CONSTANTS (matching original)
+//  CONSTANTS (USA)
 // ─────────────────────────────────────────────
 const EYE_HEIGHT   = 0.27;
 const MAX_CRUISE   = 22;
@@ -432,7 +515,7 @@ const scene = new THREE.Scene();
 scene.background = null;
 scene.fog = new THREE.FogExp2(0xc8daf0, 0.0075);
 
-// Sky gradient shader (same as original)
+// Sky gradient shader
 const skyUniforms = {
   topColor:         { value: new THREE.Color(0x4a6fa0) },
   horizonColor:     { value: new THREE.Color(0xc8daf0) },
@@ -455,12 +538,44 @@ let skyHorizTarget     = new THREE.Color(0xc8daf0);
 let skyHorizBandTarget = new THREE.Color(0xc8daf0);
 let skyIsBlack = false;
 
+let skyH = 0.592, skyS = 0.63, skyL = 0.88;
+let horizH = 0.583, horizS = 0.24, horizL = 0.79;
+let skySliderMode = 0; // 0=空, 1=地平線
+
+function applySkySliders() {
+  if (skySliderMode === 0) {
+    skyTopTarget.setHSL(skyH, skyS, skyL);
+  } else {
+    skyHorizTarget = new THREE.Color().setHSL(horizH, horizS, horizL);
+    skyHorizBandTarget.copy(skyHorizTarget);
+  }
+  skyIsBlack = false;
+}
+
+function syncSkySliders() {
+  const colorEl = document.getElementById('sky-color-slider');
+  const brightEl = document.getElementById('sky-bright-slider');
+  if (!colorEl || !brightEl) return;
+  if (skySliderMode === 0) {
+    colorEl.value = Math.round(skyH * 100);
+    brightEl.value = Math.round(Math.max(0, Math.min(100, (skyL - 0.1) / 0.88 * 100)));
+  } else {
+    colorEl.value = Math.round(horizH * 100);
+    brightEl.value = Math.round(Math.max(0, Math.min(100, (horizL - 0.1) / 0.88 * 100)));
+  }
+}
+
 function setSkyFromColor(hex, solid = false) {
   skyIsBlack = hex.toLowerCase() === '#000000';
   const base = new THREE.Color(hex);
   skyTopTarget.copy(base).multiplyScalar(0.42);
   skyHorizTarget = solid ? skyTopTarget.clone() : base.clone().lerp(new THREE.Color(0xddd8c8), 0.52);
   skyHorizBandTarget.copy(skyHorizTarget);
+  const hsl = {}; base.getHSL(hsl);
+  skyH = hsl.h; skyS = hsl.s; skyL = hsl.l;
+  skyHorizTarget.getHSL(hsl);
+  horizH = hsl.h; horizS = hsl.s; horizL = hsl.l;
+  syncSkySliders();
 }
 function setSkyHorizBand(hex) {
   if (hex) skyHorizBandTarget.set(hex); else skyHorizBandTarget.copy(skyHorizTarget);
@@ -578,31 +693,27 @@ function updateCruiseBgm() { playBgm(cruiseSpeed > 14 ? 'freeway2' : 'freeway1')
 // ─────────────────────────────────────────────
 let ytPlayer = null, ytReady = false;
 let currentVolAdj = 1.0, baseVol = 70;
-let playlist = [{ id:'3Fy8XYr6J6s', type:'yt', name:'Silence', color:null, rain:false, star:false, volAdj:1 }];
-let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null, trackConfirmed = false;
-let playlistBrowse = false, currentPL = null, plTrackIdx = 0, playlistActive = false;
-let nowPlayingLabel = '';
 let seekOnPlay = null;
+let playlist = [{ id:'3Fy8XYr6J6s', type:'yt', name:'Silence', color:null, rain:false, star:false, volAdj:1 }];
+let playlistIdx = 0, playingIdx = 0, isBrowsing = false, trackLoading = false, selectDebounce = null;
+let trackWasConfirmed = false;
+let playlistActive = false;   // a playlist is currently playing (auto-advance on)
+let playlistBrowse = false;   // user is browsing within a playlist
+let currentPL = null;         // active playlist entry { name, tracks[] }
+let plTrackIdx = 0;           // current track index within currentPL
+let nowPlayingLabel = '';      // label used in trackBar / connectBar
 
-const nowPlayingEl  = null; // now-playing2 removed
+const nowPlayingEl  = null;
+const dpadCenterEl = document.getElementById('dpad-center');
+function setPlActive(on) {
+  dpadCenterEl.classList.toggle('pl-active', on);
+}
+function exitPlaylist() {
+  if(playlistBrowse&&currentPL){ playlistBrowse=false; playlistActive=false; currentPL=null; setPlActive(false); }
+}
 const connectingEl  = connectBar;
 
 const decisionSE = new Audio('music/決定ボタンを押す7.mp3');
-
-function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function setDisp(el, text, {prefix='',suffix=''}={}) {
-  const sep=text.indexOf(' ▷ ');
-  if(sep!==-1){
-    el.innerHTML=`<span class="pl-name-small">${esc(text.slice(0,sep))}</span><br>${esc(prefix+text.slice(sep+3)+suffix)}`;
-  } else { el.textContent=prefix+text+suffix; }
-}
-function setPlActive(on){ document.getElementById('dpad-center').classList.toggle('pl-active',on); }
-function exitPlaylist(){
-  if(!playlistBrowse&&!playlistActive) return;
-  playlistBrowse=false; playlistActive=false; currentPL=null; setPlActive(false);
-  isBrowsing=false;
-  if(!musicPlaying) connectingEl.style.display='none';
-}
 
 function parseSongLine(l) {
   const urlM=l.match(/https?:\/\/[^「\s]+/); if(!urlM) return null;
@@ -624,21 +735,24 @@ async function loadPlaylist() {
     const lines = text.split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('#'));
     const entries = [];
     for(const l of lines) {
-      const plM=l.match(/^(プレイリスト「[^」]+」)(\.txt)?$/);
-      if(plM){
-        const plName=plM[1];
+      const plM = l.match(/^(プレイリスト「[^」]+」)(\.txt)?$/);
+      if(plM) {
+        const plName = plM[1];
+        const filename = plName + '.txt';
         try {
-          const plText=await (await fetch(plName+'.txt')).text();
-          const tracks=plText.split('\n').map(x=>x.trim()).filter(x=>x&&!x.startsWith('#')).map(parseSongLine).filter(Boolean);
+          const plText = await (await fetch(filename)).text();
+          const tracks = plText.split('\n').map(x=>x.trim()).filter(x=>x&&!x.startsWith('#'))
+            .map(parseSongLine).filter(Boolean);
           if(tracks.length>0) entries.push({type:'playlist',name:plName,tracks,id:null,color:null,rain:false,star:false,volAdj:1});
-        } catch(_){}
+        } catch(_) { /* file not found, skip */ }
         continue;
       }
-      const urlM=l.match(/https?:\/\/[^「\s]+/);
+      const urlM = l.match(/https?:\/\/[^「\s]+/);
       if(!urlM){ entries.push({type:'label',name:l,id:null}); continue; }
-      const song=parseSongLine(l); if(song) entries.push(song);
+      const song = parseSongLine(l);
+      if(song) entries.push(song);
     }
-    if(entries.length>0) playlist=entries;
+    if(entries.length>0){playlist=entries;}
   } catch(e){console.warn('[playlist] load failed');}
 }
 
@@ -646,42 +760,57 @@ function trackLabel(e) {
   if(!e||!e.name) return e?e.id:'';
   const c=e.name.indexOf(','); return c===-1?e.name:`${e.name.slice(0,c).trim()} - ${e.name.slice(c+1).trim()}`;
 }
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function setDisp(el,text,{prefix='',suffix=''}={}){
+  const sep=text.indexOf(' ▷ ');
+  if(sep!==-1){
+    const plName=text.slice(0,sep), track=text.slice(sep+3);
+    el.innerHTML=`<span class="pl-name-small">${esc(plName)}</span><br>${esc(prefix+track+suffix)}`;
+  } else {
+    el.textContent=prefix+text+suffix;
+  }
+}
 
 function selectTrack(delta) {
   if(displayMode>0){ displayMode=0; applyDisplayMode(); }
-  if(playlistBrowse&&currentPL){
-    const n=currentPL.tracks.length;
-    plTrackIdx=((plTrackIdx+delta)%n+n)%n;
-    isBrowsing=true;
-    connectingEl.style.display='block';
+
+  if(playlistBrowse && currentPL) {
+    const n = currentPL.tracks.length;
+    plTrackIdx = ((plTrackIdx + delta) % n + n) % n;
+    isBrowsing = true;
+    connectingEl.style.display = 'block';
     setDisp(connectingEl,`${currentPL.name} ▷ ${trackLabel(currentPL.tracks[plTrackIdx])}`);
-    clearTimeout(selectDebounce); return;
+    clearTimeout(selectDebounce);
+    return;
   }
+
   if(!playlist.length) return;
   playlistIdx=((playlistIdx+delta)%playlist.length+playlist.length)%playlist.length;
   const e=playlist[playlistIdx]; isBrowsing=(e.type!=='label');
   connectingEl.style.display='block';
-  if(e.type==='label') connectingEl.textContent=`── ${e.name} ──`;
+  if(e.type==='label'){ connectingEl.textContent=`── ${e.name} ──`; }
   else if(e.type==='playlist'){
     const m=e.name.match(/^(プレイリスト)(「[^」]*」)$/);
     if(m) connectingEl.innerHTML=`${esc(m[1])}<br>${esc(m[2])}`;
     else connectingEl.textContent=e.name;
-  }
-  else connectingEl.textContent=trackLabel(e);
+  } else { connectingEl.textContent=trackLabel(e); }
   clearTimeout(selectDebounce);
 }
 
 function playTrack(track, label) {
-  isBrowsing=false; trackLoading=true; trackConfirmed=true; nowPlayingLabel=label;
+  isBrowsing=false; trackLoading=true; trackWasConfirmed=true;
+  nowPlayingLabel = label;
   decisionSE.currentTime=0; decisionSE.play().catch(()=>{});
   connectingEl.style.display='block';
   setDisp(connectingEl,label,{suffix:'　接続中・・・'});
   if(track.color) setSkyFromColor(track.color,!!track.solid);
   setSkyHorizBand(track.horiz);
   rainActive=!!track.rain; starActive=!!track.star;
+  btnRain.classList.toggle('active',rainActive); btnStar.classList.toggle('active',starActive);
   baseVol=parseInt(ytVolSlider.value); currentVolAdj=track.volAdj??1;
   applyVolAdj();
   setDisp(trackBarEl,label,{prefix:'▶  '});
+  if(nowPlayingEl) nowPlayingEl.textContent=`▶  ${label}`;
   if(track.type==='radio'){ if(ytReady&&ytPlayer) ytPlayer.stopVideo(); playRadio(track.id); }
   else { stopRadio(); if(ytReady&&ytPlayer){ seekOnPlay=track.startSec>0?track.startSec:null; ytPlayer.loadVideoById({videoId:track.id,startSeconds:track.startSec??0}); } }
 }
@@ -689,18 +818,26 @@ function playTrack(track, label) {
 function confirmTrack() {
   if(!isBrowsing) return;
   if(musicPlaying&&!radioActive&&!(playlistBrowse&&currentPL)) return;
-  if(playlistBrowse&&currentPL){
-    const track=currentPL.tracks[plTrackIdx];
-    playTrack(track,`${currentPL.name} ▷ ${trackLabel(track)}`); return;
+
+  if(playlistBrowse && currentPL) {
+    const track = currentPL.tracks[plTrackIdx];
+    playTrack(track, `${currentPL.name} ▷ ${trackLabel(track)}`);
+    return;
   }
-  const e=playlist[playlistIdx];
-  if(e.type==='playlist'){
-    playlistActive=true; playlistBrowse=true; currentPL=e; plTrackIdx=0; setPlActive(true);
-    playTrack(e.tracks[0],`${e.name} ▷ ${trackLabel(e.tracks[0])}`); return;
+
+  const e = playlist[playlistIdx];
+  if(e.type==='playlist') {
+    playlistActive=true; playlistBrowse=true;
+    currentPL=e; plTrackIdx=0;
+    setPlActive(true);
+    const track=e.tracks[0];
+    playTrack(track, `${e.name} ▷ ${trackLabel(track)}`);
+    return;
   }
-  exitPlaylist();
+
+  playlistActive=false; playlistBrowse=false; currentPL=null; setPlActive(false);
   playingIdx=playlistIdx;
-  playTrack(e,trackLabel(e));
+  playTrack(e, trackLabel(e));
 }
 
 function applyVolAdj() {
@@ -757,11 +894,12 @@ async function initYTPlayer() {
                   if(next.color) setSkyFromColor(next.color,!!next.solid);
                   setSkyHorizBand(next.horiz);
                   rainActive=!!next.rain; starActive=!!next.star;
+                  btnRain.classList.toggle('active',rainActive); btnStar.classList.toggle('active',starActive);
                   currentVolAdj=next.volAdj??1; applyVolAdj();
                   seekOnPlay=next.startSec>0?next.startSec:null;
                   ytPlayer.loadVideoById({videoId:next.id,startSeconds:next.startSec??0});
                 } else {
-                  playlistActive=false;playlistBrowse=false;currentPL=null;setPlActive(false);
+                  playlistActive=false; playlistBrowse=false; currentPL=null; setPlActive(false);
                   currentVolAdj=1;ytVolSlider.value=baseVol;document.getElementById('yt-vol2-lbl').textContent=baseVol+'%';ytPlayer.setVolume(baseVol);
                   setMusicBtn(false);clearNowPlaying();
                 }
@@ -790,7 +928,7 @@ function playRadio(url){
   radioActive=true;
 }
 function stopRadio(){if(radioHls){radioHls.destroy();radioHls=null;}radioAudio.pause();radioAudio.src='';radioActive=false;}
-radioAudio.addEventListener('playing',()=>{trackLoading=false;connectingEl.style.display='block';setDisp(connectingEl,nowPlayingLabel);setDisp(trackBarEl,nowPlayingLabel,{prefix:'▶  '});setMusicBtn(true);});
+radioAudio.addEventListener('playing',()=>{trackLoading=false;const lbl=nowPlayingLabel||trackLabel(playlist[playingIdx]);connectingEl.style.display='block';setDisp(connectingEl,lbl);setDisp(trackBarEl,lbl,{prefix:'▶  '});setMusicBtn(true);});
 radioAudio.addEventListener('pause', ()=>setMusicBtn(false));
 radioAudio.addEventListener('ended',()=>{setMusicBtn(false);clearNowPlaying();});
 
@@ -1015,14 +1153,12 @@ let yaw=0, pitch=0, pitchShake=0, shakePhase=0, shakeT0=performance.now();
 let touchActive=false, touchLastX=0, touchLastY=0;
 let gameActive=false, autoPilot=false;
 let cruiseSpeed=0;
-let displayMode=0; // 0=full, 1=hide hud
+let displayMode=0;
 
-// Sliders
 const speedSlider = document.getElementById('speed-slider');
 const ytVolSlider  = document.getElementById('yt-vol2');
 const engVolSlider = document.getElementById('engine-vol2');
 
-// lrSlider value is read each frame in the animation loop (rate-based steering)
 speedSlider.addEventListener('input',e=>{ if(gameActive) cruiseSpeed=+e.target.value/100*MAX_CRUISE; });
 
 engVolSlider.addEventListener('input',e=>{
@@ -1033,8 +1169,28 @@ ytVolSlider.addEventListener('input',e=>{
   baseVol=parseInt(e.target.value); applyVolAdj();
 });
 
-// Touch drag on game screen → camera yaw/pitch
-// Screen-only: drag=視点移動 / ダブルタップ(2秒以内に2回)=全画面解除
+const skyColorSlider = document.getElementById('sky-color-slider');
+const skyBrightSlider = document.getElementById('sky-bright-slider');
+skyColorSlider.addEventListener('input', e => {
+  const v = e.target.value / 100;
+  if (skySliderMode === 0) {
+    skyH = v;
+    if (skyS === 0) skyS = 0.6;
+    if (skyL === 0) skyL = 0.1;
+  } else {
+    horizH = v;
+    if (horizS === 0) horizS = 0.6;
+    if (horizL === 0) horizL = 0.1;
+  }
+  applySkySliders();
+});
+skyBrightSlider.addEventListener('input', e => {
+  const v = 0.1 + e.target.value / 100 * 0.88;
+  if (skySliderMode === 0) { skyL = v; }
+  else { horizL = v; }
+  applySkySliders();
+});
+
 let touchIsDrag=false, lastTapTime=0;
 const DRAG_THRESHOLD=8;
 wrapper.addEventListener('touchstart',e=>{
@@ -1051,15 +1207,14 @@ wrapper.addEventListener('touchmove',e=>{
   pitch=Math.max(-1.3,Math.min(1.3,pitch));
 },{passive:true});
 wrapper.addEventListener('touchend',()=>{
-  if(fsState===2&&!touchIsDrag){
+  if(!touchIsDrag){
     const now=Date.now();
-    if(now-lastTapTime<2000){ exitScreenOnly(); lastTapTime=0; }
+    if(now-lastTapTime<400){ toggleFullscreen(); lastTapTime=0; }
     else lastTapTime=now;
   }
   touchActive=false; touchIsDrag=false;
 });
 wrapper.addEventListener('touchcancel',()=>{touchActive=false;touchIsDrag=false;});
-// Mouse drag (desktop)
 let mouseDown=false,mouseLastX=0,mouseLastY=0;
 wrapper.addEventListener('mousedown',e=>{if(e.target===canvas||e.target===document.getElementById('crosshair')){mouseDown=true;mouseLastX=e.clientX;mouseLastY=e.clientY;}});
 window.addEventListener('mouseup',()=>{mouseDown=false;});
@@ -1072,26 +1227,22 @@ window.addEventListener('mousemove',e=>{
 
 // D-pad
 let dpadHoldTimer=null, dpadHoldInterval=null;
+function clearDpadHold(){ clearTimeout(dpadHoldTimer); clearInterval(dpadHoldInterval); dpadHoldTimer=dpadHoldInterval=null; }
 document.querySelectorAll('.dpad-btn').forEach(btn=>{
   const dir=btn.dataset.dir; if(!dir)return;
   const press=()=>{
     btn.classList.add('pressed');
-    if(dir==='up'||dir==='down'){
-      const d=dir==='up'?-1:+1;
-      selectTrack(d);
-      dpadHoldTimer=setTimeout(()=>{
-        dpadHoldInterval=setInterval(()=>selectTrack(d*5),180);
-      },500);
-    }
-    else if(dir==='left'){seekYT(-10);}
+    if(dir==='up'){
+      selectTrack(-1);
+      dpadHoldTimer=setTimeout(()=>{ dpadHoldInterval=setInterval(()=>selectTrack(-5),200); },500);
+    } else if(dir==='down'){
+      selectTrack(+1);
+      dpadHoldTimer=setTimeout(()=>{ dpadHoldInterval=setInterval(()=>selectTrack(+5),200); },500);
+    } else if(dir==='left'){seekYT(-10);}
     else if(dir==='right'){seekYT(+10);}
     else if(dir==='center'){ exitPlaylist(); }
   };
-  const release=()=>{
-    btn.classList.remove('pressed');
-    clearTimeout(dpadHoldTimer); dpadHoldTimer=null;
-    clearInterval(dpadHoldInterval); dpadHoldInterval=null;
-  };
+  const release=()=>{ btn.classList.remove('pressed'); clearDpadHold(); };
   btn.addEventListener('mousedown',press);
   btn.addEventListener('touchstart',e=>{e.preventDefault();press();},{passive:false});
   btn.addEventListener('mouseup',release);btn.addEventListener('mouseleave',release);
@@ -1107,7 +1258,6 @@ const btnAuto  =document.getElementById('btn-auto');
 const btnSoundBtn=document.getElementById('btn-sound');
 const btnFs    =document.getElementById('btn-fs');
 
-// Music play state (independent of engine BGM)
 let musicPlaying=false;
 function clearNowPlaying(){
   trackBarEl.textContent='';
@@ -1115,7 +1265,7 @@ function clearNowPlaying(){
 }
 function setMusicBtn(playing){
   musicPlaying=playing;
-  btnPlay.classList.add('active'); // always lit
+  btnPlay.classList.add('active');
   document.getElementById('play-icon').innerHTML=playing
     ?'<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
     :'<path d="M8 5v14l11-7z"/>';
@@ -1123,17 +1273,15 @@ function setMusicBtn(playing){
 }
 
 btnPlay.addEventListener('click',()=>{
-  // Stop always takes priority
   if(musicPlaying){
     trackLoading=false;
     if(radioActive){ radioAudio.pause(); return; }
     if(ytReady&&ytPlayer){ ytPlayer.pauseVideo(); return; }
     return;
   }
-  // Stopped: confirm browsed track or resume
   if(isBrowsing){ confirmTrack(); return; }
   if(radioActive){ radioAudio.play().catch(console.error); return; }
-  if(!ytReady||!ytPlayer||!trackConfirmed) return;
+  if(!ytReady||!ytPlayer||!trackWasConfirmed) return;
   ytPlayer.playVideo();
 });
 
@@ -1150,9 +1298,104 @@ function applyDisplayMode(){
     :'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><path d="M3 3l18 18"/>';
 }
 btnHud.addEventListener('click',()=>{
-  displayMode=(displayMode+1)%4; // 0→1→2→3→0
+  displayMode=(displayMode+1)%4;
   applyDisplayMode();
 });
+
+// ─────────────────────────────────────────────
+//  KEYBOARD CONTROLS (PC)
+// ─────────────────────────────────────────────
+(function(){
+  const kbHeld={}, kbT={};
+  function kbPress(dir){
+    if(kbHeld[dir]) return;
+    kbHeld[dir]=true;
+    if(dir==='up'){
+      selectTrack(-1);
+      kbT.upT=setTimeout(()=>{kbT.upI=setInterval(()=>selectTrack(-5),200);},500);
+    } else {
+      selectTrack(+1);
+      kbT.dnT=setTimeout(()=>{kbT.dnI=setInterval(()=>selectTrack(+5),200);},500);
+    }
+  }
+  function kbRelease(dir){
+    kbHeld[dir]=false;
+    if(dir==='up'){clearTimeout(kbT.upT);clearInterval(kbT.upI);kbT.upT=kbT.upI=null;}
+    else          {clearTimeout(kbT.dnT);clearInterval(kbT.dnI);kbT.dnT=kbT.dnI=null;}
+  }
+  document.addEventListener('keydown',e=>{
+    if(e.repeat) return;
+    switch(e.key){
+      case 'ArrowUp':    e.preventDefault(); kbPress('up');   break;
+      case 'ArrowDown':  e.preventDefault(); kbPress('dn');   break;
+      case 'ArrowLeft':  e.preventDefault(); seekYT(-10);     break;
+      case 'ArrowRight': e.preventDefault(); seekYT(+10);     break;
+      case 'y': case 'Y': btnPlay.click();  break;
+      case 'a': case 'A': btnHud.click();   break;
+      case 'Escape': exitPlaylist(); break;
+    }
+  });
+  document.addEventListener('keyup',e=>{
+    if(e.key==='ArrowUp')   kbRelease('up');
+    if(e.key==='ArrowDown') kbRelease('dn');
+  });
+})();
+
+// ─────────────────────────────────────────────
+//  GAMEPAD CONTROLS
+// ─────────────────────────────────────────────
+(function(){
+  const prev={}, hold={};
+
+  function isDown(gp,idx){ const b=gp.buttons[idx]; if(!b) return false; return typeof b==='object'?b.pressed:!!b; }
+  function btnVal(gp,idx){ const b=gp.buttons[idx]; if(!b) return 0; return typeof b==='object'?b.value:(b?1:0); }
+
+  window._pollGamepad=function(){
+    const pads=navigator.getGamepads?navigator.getGamepads():[];
+    let gp=null;
+    for(let i=0;i<pads.length;i++){ if(pads[i]){gp=pads[i];break;} }
+    if(!gp) return;
+
+    // Left stick X → steering (yaw)
+    const stickX=gp.axes[0]||0;
+    if(Math.abs(stickX)>0.12) yaw-=stickX*0.03;
+
+    // Rising-edge buttons
+    function onPress(idx,fn){
+      const cur=isDown(gp,idx);
+      if(cur&&!prev[idx]) fn();
+      prev[idx]=cur;
+    }
+    onPress(3, ()=>btnPlay.click());   // Y / △  → play/confirm
+    onPress(0, ()=>btnHud.click());    // A / ×  → display toggle
+    onPress(8, exitPlaylist);          // Select → exit playlist
+    onPress(14,()=>seekYT(-10));       // D-pad left
+    onPress(15,()=>seekYT(+10));       // D-pad right
+
+    // RT(7)/LT(6) → speed
+    const spd=(btnVal(gp,7)-btnVal(gp,6))*1.5;
+    if(Math.abs(spd)>0.02){
+      speedSlider.value=Math.min(100,Math.max(0,+speedSlider.value+spd));
+      speedSlider.dispatchEvent(new Event('input'));
+    }
+
+    // D-pad up(12)/down(13) with hold-to-scroll
+    function dpadHold(idx,delta){
+      const cur=isDown(gp,idx);
+      const was=!!prev[idx];
+      if(cur&&!was){
+        selectTrack(delta);
+        hold[idx]=setTimeout(()=>{ hold['i'+idx]=setInterval(()=>selectTrack(delta<0?-5:5),200); },500);
+      } else if(!cur&&was){
+        clearTimeout(hold[idx]); clearInterval(hold['i'+idx]);
+        hold[idx]=hold['i'+idx]=null;
+      }
+      prev[idx]=cur;
+    }
+    dpadHold(12,-1);
+    dpadHold(13,+1);
+  };
+})();
 
 btnAuto.addEventListener('click',()=>{
   autoPilot=!autoPilot;
@@ -1164,82 +1407,67 @@ btnSoundBtn.addEventListener('click',()=>{
   soundPanel.style.display=soundPanel.style.display==='flex'?'none':'flex';
 });
 
-let fsState=0; // 0:normal 1:fullscreen 2:screen-only
-function updateFsBtn(){ btnFs.classList.add('active'); }
+const btnRain = document.getElementById('btn-rain');
+const btnStar = document.getElementById('btn-star');
+btnRain.addEventListener('click', () => {
+  rainActive = !rainActive;
+  btnRain.classList.toggle('active', rainActive);
+});
+btnStar.addEventListener('click', () => {
+  starActive = !starActive;
+  btnStar.classList.toggle('active', starActive);
+});
+
+// btn-fs = 色モードボタン: 空(0)↔地平線(1)
+const fsIcon = document.getElementById('fs-icon');
+const CLOUD_PATH = '<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z"/>';
+const HORIZ_PATH = '<path d="M3 18h18M4 14l4-6 4 4 3-3 5 5"/>';
+function updateColorModeBtn(){
+  const isSky = skySliderMode===0;
+  fsIcon.innerHTML = isSky ? CLOUD_PATH : HORIZ_PATH;
+  fsIcon.setAttribute('fill', isSky ? 'currentColor' : 'none');
+  fsIcon.setAttribute('stroke', isSky ? 'none' : 'currentColor');
+  fsIcon.setAttribute('stroke-width', isSky ? '0' : '2');
+  document.getElementById('lbl-color').textContent = isSky ? '上空色' : '地平色';
+  btnFs.classList.add('active');
+}
+btnFs.addEventListener('click',()=>{
+  skySliderMode = skySliderMode===0 ? 1 : 0;
+  updateColorModeBtn();
+  syncSkySliders();
+});
+updateColorModeBtn();
+
+// 全画面: ダブルタップで toggle
+let fsState=0;
+function toggleFullscreen(){
+  if(fsState===0){
+    document.body.classList.add('screen-only');
+    (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen)?.call(document.documentElement).catch(()=>{});
+    fsState=2;
+    try{ screen.orientation.lock('landscape').catch(()=>{}); }catch(_){}
+    setTimeout(onResize,50);
+  } else {
+    exitScreenOnly();
+  }
+}
 function exitScreenOnly(){
-  if(fsState!==2) return;
+  if(fsState===0) return;
   document.body.classList.remove('screen-only');
   fsState=0;
   try{ screen.orientation.unlock(); }catch(_){}
   if(document.fullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen)?.call(document);}
   setTimeout(onResize,50);
-  updateFsBtn();
 }
-btnFs.addEventListener('click',()=>{
-  if(fsState===0){
-    (document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen)?.call(document.documentElement);
-    fsState=1;
-  } else if(fsState===1){
-    document.body.classList.add('screen-only');
-    fsState=2;
-    try{ screen.orientation.lock('landscape').catch(()=>{}); }catch(_){}
-    setTimeout(onResize,50);
-  }
-  updateFsBtn();
-});
-// Sync state when user exits fullscreen via system gesture
 function onFsChange(){
   if(!document.fullscreenElement){
-    if(fsState===2){ document.body.classList.remove('screen-only'); try{screen.orientation.unlock();}catch(_){} }
-    fsState=0;
-    setTimeout(onResize,50);
-    updateFsBtn();
+    if(fsState===2) document.body.classList.remove('screen-only');
+    fsState=0; setTimeout(onResize,50);
   }
 }
 document.addEventListener('fullscreenchange',onFsChange);
-document.addEventListener('webkitfullscreenchange',()=>{
-  if(!document.fullscreenElement){
-    if(fsState===2){ document.body.classList.remove('screen-only'); try{screen.orientation.unlock();}catch(_){} }
-    fsState=0;
-    setTimeout(onResize,50);
-  }
-  updateFsBtn();
-});
-updateFsBtn();
-
-// PC: ダブルクリックで全画面ボタンと同じ動作
-canvas.addEventListener('dblclick',()=>{ btnFs.click(); });
-
-// PC: キーボード操作
-let kbHoldTimer=null, kbHoldInterval=null;
-document.addEventListener('keydown',e=>{
-  if(e.target.tagName==='INPUT') return;
-  if(e.repeat) return;
-  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
-    e.preventDefault();
-    const d=e.key==='ArrowUp'?-1:+1;
-    selectTrack(d);
-    kbHoldTimer=setTimeout(()=>{
-      kbHoldInterval=setInterval(()=>selectTrack(d*5),180);
-    },500);
-  } else if(e.key==='ArrowLeft'){
-    e.preventDefault(); seekYT(-10);
-  } else if(e.key==='ArrowRight'){
-    e.preventDefault(); seekYT(+10);
-  } else if(e.key==='y'||e.key==='Y'){
-    btnPlay.click();
-  } else if(e.key==='a'||e.key==='A'){
-    btnHud.click();
-  } else if(e.key==='Escape'){
-    exitPlaylist();
-  }
-});
-document.addEventListener('keyup',e=>{
-  if(e.key==='ArrowUp'||e.key==='ArrowDown'){
-    clearTimeout(kbHoldTimer); kbHoldTimer=null;
-    clearInterval(kbHoldInterval); kbHoldInterval=null;
-  }
-});
+document.addEventListener('webkitfullscreenchange',onFsChange);
+wrapper.addEventListener('dblclick',()=>{ if(matchMedia('(pointer:fine)').matches) toggleFullscreen(); });
 
 // 説明ページ
 document.getElementById('explain-btn').addEventListener('click',()=>{
@@ -1250,7 +1478,6 @@ document.getElementById('explain-back-btn').addEventListener('click',()=>{
   document.getElementById('explain-panel').style.display='none';
   startOverlay.style.display='flex';
 });
-// 説明画像タップ → ライトボックス拡大表示
 const lightbox=document.getElementById('lightbox');
 const lightboxImg=document.getElementById('lightbox-img');
 document.querySelectorAll('#explain-content img').forEach(img=>{
@@ -1282,7 +1509,7 @@ startBtn.addEventListener('click',()=>{
     resetTrafficCars();
   }
   startOverlay.style.display='none';
-  playBgm('freeway1'); // engine BGM always on
+  playBgm('freeway1');
   loadHeavyModels();
 });
 
@@ -1290,20 +1517,16 @@ startBtn.addEventListener('click',()=>{
 //  ANIMATION LOOP
 // ─────────────────────────────────────────────
 let lastT=performance.now();
-const _fVec=new THREE.Vector3(), _rVec=new THREE.Vector3();
+const _fVec=new THREE.Vector3();
 
 function getEffectiveYaw(){ return yaw; }
 
 function updateMovement(dt){
   if(!gameActive) return;
 
-  // Left-right slider: rate-based steering (right slider = right turn = decrease yaw)
-  // Max 2.2 rad/s → full U-turn in ~1.4s
-
   const effYaw=getEffectiveYaw();
   updateCruiseBgm();
 
-  // Update cruise from slider (continuous sync)
   cruiseSpeed=+speedSlider.value/100*MAX_CRUISE;
 
   if(cruiseSpeed>0){
@@ -1355,6 +1578,7 @@ function animate(){
 
   window._updateRain();
   window._updateStars();
+  window._pollGamepad();
 
   if(gameActive){
     hudSpeedEl.textContent=Math.round(cruiseSpeed/MAX_CRUISE*120);
