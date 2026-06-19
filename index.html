@@ -731,9 +731,11 @@ let cloudDrift  = 0;       // accumulated left-right drift
       dens *= smoothstep(uMinY, uMinY+uBand, dir.y);   // 最低の高さより上だけ
       float lit = smoothstep(uCov, uCov+0.5, d);
       vec3 darkest = mix(vec3(0.5), vec3(1.0), uShadow); // 最暗部の明るさ
-      // 白い下面=地平線色を反映 / 影・グレー部=上空色を反映
-      vec3 darkCol = mix(darkest, uSkyColor, uShadowSky);
-      vec3 litCol  = mix(vec3(1.0), uSkyHor, uLitSky);
+      // 空色は「明るさそのまま・色相だけ」乗せる(正規化して暗くならない/消えない)
+      vec3 horTint = uSkyHor   / max(max(uSkyHor.r,  uSkyHor.g),  max(uSkyHor.b,  0.001));
+      vec3 topTint = uSkyColor / max(max(uSkyColor.r,uSkyColor.g),max(uSkyColor.b,0.001));
+      vec3 litCol  = mix(vec3(1.0), horTint, uLitSky);          // 白い下面=地平線色相
+      vec3 darkCol = mix(darkest, darkest*topTint, uShadowSky); // 影・グレー部=上空色相
       vec3 col = mix(darkCol, litCol, lit);
       float a = dens*uOpacity;
       if(a<0.003) discard;
@@ -741,7 +743,7 @@ let cloudDrift  = 0;       // accumulated left-right drift
     }`;
   const cloudMat = new THREE.ShaderMaterial({
     uniforms: U, vertexShader: cloudVert, fragmentShader: cloudFrag,
-    side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: false, fog: false,
+    side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: true, fog: false,
   });
   const cloudDome = new THREE.Mesh(new THREE.SphereGeometry(470,48,24), cloudMat);
   cloudDome.renderOrder = -0.5; cloudDome.frustumCulled = false; cloudDome.visible = false;
