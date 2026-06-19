@@ -569,7 +569,7 @@ function setSkyFromColor(hex, solid = false) {
   skyIsBlack = hex.toLowerCase() === '#000000';
   const base = new THREE.Color(hex);
   skyTopTarget.copy(base).multiplyScalar(0.42);
-  skyHorizTarget = solid ? skyTopTarget.clone() : base.clone().lerp(new THREE.Color(0xddd8c8), 0.15);
+  skyHorizTarget = solid ? skyTopTarget.clone() : base.clone().lerp(new THREE.Color(0xddd8c8), 0.1);
   skyHorizBandTarget.copy(skyHorizTarget);
   const hsl = {}; base.getHSL(hsl);
   skyH = hsl.h; skyS = hsl.s; skyL = hsl.l;
