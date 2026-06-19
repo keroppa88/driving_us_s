@@ -652,6 +652,124 @@ let starActive = false;
 }
 
 // ─────────────────────────────────────────────
+//  CLOUDS (fbm dome that blends with the dynamic sky colour)
+// ─────────────────────────────────────────────
+let cloudActive = false;   // clouds shown
+let cloudType   = 1;       // 1 = cumulus(雲1), 2 = cirrus(雲2)
+let cloudTime   = 0;
+{
+  const cloudUniforms = {
+    uTime:      { value: 0 },
+    uType:      { value: 1 },
+    uOpacity:   { value: 0.9 },
+    uSkyColor:  { value: new THREE.Color(0x4a6fa0) },
+    uCloudColor:{ value: new THREE.Color(0x8090a0) }, // shadow side
+    uLightColor:{ value: new THREE.Color(0xffffff) }, // lit side
+  };
+  const cloudVert = `varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
+  const cloudFrag = `
+    precision highp float;
+    uniform float uTime, uType, uOpacity;
+    uniform vec3 uSkyColor, uCloudColor, uLightColor;
+    varying vec3 vDir;
+    float hash(vec2 p){ p=fract(p*vec2(123.34,345.45)); p+=dot(p,p+34.345); return fract(p.x*p.y); }
+    float noise(vec2 p){
+      vec2 i=floor(p), f=fract(p);
+      float a=hash(i), b=hash(i+vec2(1.0,0.0)), c=hash(i+vec2(0.0,1.0)), d=hash(i+vec2(1.0,1.0));
+      vec2 u=f*f*(3.0-2.0*f);
+      return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);
+    }
+    float fbm(vec2 p){
+      float v=0.0, a=0.5;
+      for(int i=0;i<6;i++){ v+=a*noise(p); p=p*2.02+vec2(1.7,9.2); a*=0.5; }
+      return v;
+    }
+    void main(){
+      vec3 dir=normalize(vDir);
+      if(dir.y<=0.015) discard;
+      bool distant = uType>1.5;          // 雲2 = 遠景の帯
+      // sky-plane projection (perspective: clouds grow toward the horizon = 天球に沿う)
+      vec2 p = dir.xz/dir.y;
+      vec2 fl; float scale, cov, soft, skyMix;
+      if(!distant){
+        // 雲1: 立体的な積雲、奥→手前へ流れ空をある程度覆う
+        scale=0.85; cov=0.47; soft=0.26; skyMix=0.12;
+        p*=scale;
+        fl=vec2(0.0, uTime*0.02);        // flow far -> near (along view depth)
+      } else {
+        // 雲2: 地平線近くの遠景のみ、左右にゆっくり、空気遠近で空へ溶かす
+        scale=2.2; cov=0.55; soft=0.22; skyMix=0.30;
+        p*=scale; p.x*=0.6;
+        fl=vec2(uTime*0.006, 0.0);
+      }
+      vec2 sp=p+fl;
+      // domain-warped fbm + finer detail octave for a non-flat, realistic break-up
+      vec2 q=vec2(fbm(sp), fbm(sp+vec2(3.1,6.7)));
+      float base=fbm(sp+1.6*q);
+      float detail=fbm(sp*3.0+4.0*q);
+      float d=base*0.8+detail*0.2;
+      float dens=smoothstep(cov, cov+soft, d);
+      if(!distant){
+        dens*=smoothstep(0.015,0.14,dir.y);                         // fade into horizon
+      } else {
+        dens*=smoothstep(0.015,0.05,dir.y)*smoothstep(0.34,0.10,dir.y); // distant low band only
+      }
+      // density-based shading (brighter cores) instead of flat fill
+      float lit=smoothstep(cov, cov+0.5, d);
+      vec3 col=mix(uCloudColor, uLightColor, lit);
+      col=mix(col, uSkyColor, skyMix);     // aerial perspective / cohesion with sky
+      float a=dens*uOpacity*(distant?0.85:1.0);
+      if(a<0.003) discard;
+      gl_FragColor=vec4(col, a);
+    }`;
+  const cloudMat = new THREE.ShaderMaterial({
+    uniforms: cloudUniforms, vertexShader: cloudVert, fragmentShader: cloudFrag,
+    side: THREE.BackSide, transparent: true, depthWrite: false, depthTest: false, fog: false,
+  });
+  const cloudDome = new THREE.Mesh(new THREE.SphereGeometry(470,48,24), cloudMat);
+  cloudDome.renderOrder = -0.5; cloudDome.frustumCulled = false; cloudDome.visible = false;
+  scene.add(cloudDome);
+  const _white = new THREE.Color(0xffffff);
+  window._updateClouds = function(dt){
+    cloudDome.visible = cloudActive;
+    if(!cloudActive) return;
+    cloudTime += dt;
+    cloudUniforms.uTime.value = cloudTime;
+    cloudUniforms.uType.value = cloudType;
+    cloudDome.position.copy(camera.position);
+    // Sync colours with the current (lerped) sky so clouds match any sky colour
+    const top = skyUniforms.topColor.value, hor = skyUniforms.horizonColor.value;
+    cloudUniforms.uSkyColor.value.copy(top);
+    cloudUniforms.uCloudColor.value.copy(top).lerp(hor,0.5).multiplyScalar(0.85);
+    cloudUniforms.uLightColor.value.copy(hor).lerp(_white,0.6);
+  };
+}
+
+// Sky-decoration button cycle: 0=none, 1=stars, 2=cloud1, 3=cloud2
+let skyDecoMode = 0;
+const SKY_DECO_ICON = [
+  // 0: combined star + cloud (resting)
+  '<path d="M17 13h-1.05A6 6 0 107 21h10a4 4 0 000-8z" fill="currentColor"/><polygon points="9 2 10.2 5.3 13.7 5.5 11 7.8 11.9 11.2 9 9.4 6.1 11.2 7 7.8 4.3 5.5 7.8 5.3" fill="currentColor"/>',
+  // 1: star
+  '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" fill="currentColor"/>',
+  // 2: cloud (雲1)
+  '<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" fill="currentColor"/>',
+  // 3: cloud + small mark (雲2)
+  '<path d="M18 11h-1.26A8 8 0 109 21h9a5 5 0 000-10z" fill="currentColor"/><circle cx="19" cy="5" r="1.6" fill="currentColor"/>',
+];
+function applySkyDeco(){
+  starActive  = (skyDecoMode===1);
+  cloudActive = (skyDecoMode>=2);
+  cloudType   = (skyDecoMode===3)?2:1;
+  const btn = document.getElementById('btn-star');
+  if(btn){
+    btn.classList.toggle('active', skyDecoMode!==0);
+    const svg = btn.querySelector('svg');
+    if(svg) svg.innerHTML = SKY_DECO_ICON[skyDecoMode];
+  }
+}
+
+// ─────────────────────────────────────────────
 //  MOUNTAIN RINGS
 // ─────────────────────────────────────────────
 function buildMountainRings() {
@@ -828,8 +946,8 @@ function playTrack(track, label) {
   setDisp(connectingEl,label,{suffix:'　接続中・・・'});
   if(track.color) setSkyFromColor(track.color,!!track.solid);
   setSkyHorizBand(track.horiz);
-  rainActive=!!track.rain; starActive=!!track.star;
-  btnRain.classList.toggle('active',rainActive); btnStar.classList.toggle('active',starActive);
+  rainActive=!!track.rain; skyDecoMode=track.star?1:0; applySkyDeco();
+  btnRain.classList.toggle('active',rainActive);
   baseVol=parseInt(ytVolSlider.value); currentVolAdj=track.volAdj??1;
   applyVolAdj();
   setDisp(trackBarEl,label,{prefix:'▶  '});
@@ -916,8 +1034,8 @@ async function initYTPlayer() {
                   setDisp(trackBarEl,lbl,{prefix:'▶  '});
                   if(next.color) setSkyFromColor(next.color,!!next.solid);
                   setSkyHorizBand(next.horiz);
-                  rainActive=!!next.rain; starActive=!!next.star;
-                  btnRain.classList.toggle('active',rainActive); btnStar.classList.toggle('active',starActive);
+                  rainActive=!!next.rain; skyDecoMode=next.star?1:0; applySkyDeco();
+                  btnRain.classList.toggle('active',rainActive);
                   currentVolAdj=next.volAdj??1; applyVolAdj();
                   seekOnPlay=next.startSec>0?next.startSec:null;
                   ytPlayer.loadVideoById({videoId:next.id,startSeconds:next.startSec??0});
@@ -1436,10 +1554,12 @@ btnRain.addEventListener('click', () => {
   rainActive = !rainActive;
   btnRain.classList.toggle('active', rainActive);
 });
+// 星&雲ボタン: なし(0)→星(1)→雲1(2)→雲2(3)→なし
 btnStar.addEventListener('click', () => {
-  starActive = !starActive;
-  btnStar.classList.toggle('active', starActive);
+  skyDecoMode = (skyDecoMode + 1) % 4;
+  applySkyDeco();
 });
+applySkyDeco(); // 初期アイコン(星+雲・非アクティブ)を反映
 
 // btn-fs = 色モードボタン: 空(0)↔地平線(1)
 const fsIcon = document.getElementById('fs-icon');
@@ -1604,6 +1724,7 @@ function animate(){
 
   window._updateRain();
   window._updateStars();
+  window._updateClouds(dt);
   window._pollGamepad();
 
   if(gameActive){
