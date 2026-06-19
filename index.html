@@ -711,11 +711,8 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
       float detail=fbm(sp*3.0+4.0*q);
       float d=base*0.8+detail*0.2;
       float dens=smoothstep(cov, cov+soft, d);
-      if(!distant){
-        dens*=smoothstep(0.015,0.14,dir.y);                          // fade into horizon
-      } else {
-        dens*=smoothstep(0.015,0.04,dir.y)*smoothstep(0.22,0.06,dir.y); // distant low band only
-      }
+      // どちらも地平線でフェードしつつ天頂まで分布
+      dens*=smoothstep(0.015,0.14,dir.y);
       // density-based shading (brighter cores) instead of flat fill
       float lit=smoothstep(cov, cov+0.5, d);
       // 雲2 は立体感を抑えた水墨画ふうの薄い陰影
