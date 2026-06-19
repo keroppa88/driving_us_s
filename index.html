@@ -704,7 +704,7 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
         scale=0.9; cov=0.52; soft=0.18; skyMix=0.28;
         p = dir.xz/max(dir.y,0.30);
         p*=scale; p.x*=0.6;
-        fl=vec2(uTime*0.12, 0.0);   // slow but visible left-right drift
+        fl=vec2(uTime*0.35, 0.0);   // clearly visible left-right drift (dial down to taste)
       }
       vec2 sp=p+fl;
       // domain-warped fbm + finer detail octave for a non-flat, realistic break-up
@@ -747,7 +747,7 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
     cloudTime += dt;
     // 雲1の前方フロー: 基本ドリフト + 走行速度連動
     const spd = (typeof cruiseSpeed !== 'undefined') ? cruiseSpeed : 0;
-    cloudFlow += dt * (0.8 + spd * 0.3);
+    cloudFlow += dt * (2.5 + spd * 0.6);
     cloudUniforms.uTime.value = cloudTime;
     cloudUniforms.uFlow.value = cloudFlow;
     cloudUniforms.uType.value = cloudType;
