@@ -602,9 +602,11 @@ scene.add(sun);
 // ─────────────────────────────────────────────
 const extDesertPlane = (() => {
   // Darker than the GLB terrain's albedo on purpose: AmbientLight is 1.5, so a
-  // light colour would clamp to white and show as a bright line at the horizon
-  // where this far plane peeks out beyond the terrain. This stays a muted tan.
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(1200,1200), new THREE.MeshLambertMaterial({ color:0x6b5c44 }));
+  // Unlit (MeshBasicMaterial) on purpose: a lit plane is brightened by the
+  // ambient(1.5)+sun lights to ~2.3x and, seen edge-on at the horizon, shows as
+  // a bright line where it peeks past the terrain. Unlit keeps a constant desert
+  // tone that matches the GLB terrain; fog still fades it to the horizon colour.
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1200,1200), new THREE.MeshBasicMaterial({ color:0x8a7048 }));
   m.rotation.x = -Math.PI/2; m.position.set(0,-0.05,-116); m.frustumCulled = false;
   scene.add(m); return m;
 })();
