@@ -533,6 +533,9 @@ const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(490,32,15), skyMat);
 skyMesh.renderOrder = -1; skyMesh.frustumCulled = false;
 scene.add(skyMesh);
 
+// 0 = bright horizon glow (visible pale line); higher = horizon blended toward
+// the upper sky so the brightness peak (and the line) flattens out.
+const HORIZON_FLATTEN = 0.38;
 let skyTopTarget       = new THREE.Color(0x4a6fa0);
 let skyHorizTarget     = new THREE.Color(0xc8daf0);
 let skyHorizBandTarget = new THREE.Color(0xc8daf0);
@@ -570,6 +573,9 @@ function setSkyFromColor(hex, solid = false) {
   const base = new THREE.Color(hex);
   skyTopTarget.copy(base).multiplyScalar(0.42);
   skyHorizTarget = solid ? skyTopTarget.clone() : base.clone().lerp(new THREE.Color(0xddd8c8), 0.38);
+  // Pull the horizon brightness down toward the upper sky so it is no longer a
+  // local brightness peak between ground and sky — removes the pale horizon line.
+  if (!solid) skyHorizTarget.lerp(skyTopTarget, HORIZON_FLATTEN);
   skyHorizBandTarget.copy(skyHorizTarget);
   const hsl = {}; base.getHSL(hsl);
   skyH = hsl.h; skyS = hsl.s; skyL = hsl.l;
