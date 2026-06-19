@@ -525,14 +525,27 @@ const skyMat = new THREE.ShaderMaterial({
   uniforms: skyUniforms,
   vertexShader:   `varying vec3 vPos; void main(){ vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader: `uniform vec3 topColor,horizonColor,horizonBandColor; varying vec3 vPos;
-    void main(){ float h=clamp(normalize(vPos).y,0.0,1.0); float b=smoothstep(0.0,0.18,h);
-      vec3 lo=mix(horizonBandColor,horizonColor,b); gl_FragColor=vec4(mix(lo,topColor,pow(h,0.85)),1.0); }`,
+    void main(){
+      float h=clamp(normalize(vPos).y,0.0,1.0);
+      float b=smoothstep(0.0,0.18,h);
+      vec3 lo=mix(horizonBandColor,horizonColor,b);
+      vec3 col=mix(lo,topColor,pow(h,0.85));
+      // 極細・濃いめグレーの地平線（淡く浮く帯の代わりに、はっきり細い線）
+      float L=dot(lo,vec3(0.299,0.587,0.114));
+      vec3 lineCol=vec3(L*0.45);
+      float line=smoothstep(0.012,0.0,h);
+      col=mix(col,lineCol,line*0.9);
+      gl_FragColor=vec4(col,1.0);
+    }`,
   side: THREE.BackSide, depthWrite: false, depthTest: false,
 });
 const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(490,32,15), skyMat);
 skyMesh.renderOrder = -1; skyMesh.frustumCulled = false;
 scene.add(skyMesh);
 
+// 0 = bright horizon glow (visible pale line); higher = horizon blended toward
+// the upper sky so the brightness peak (and the line) flattens out.
+const HORIZON_FLATTEN = 0.38;
 let skyTopTarget       = new THREE.Color(0x4a6fa0);
 let skyHorizTarget     = new THREE.Color(0xc8daf0);
 let skyHorizBandTarget = new THREE.Color(0xc8daf0);
@@ -570,6 +583,9 @@ function setSkyFromColor(hex, solid = false) {
   const base = new THREE.Color(hex);
   skyTopTarget.copy(base).multiplyScalar(0.42);
   skyHorizTarget = solid ? skyTopTarget.clone() : base.clone().lerp(new THREE.Color(0xddd8c8), 0.38);
+  // Pull the horizon brightness down toward the upper sky so it is no longer a
+  // local brightness peak between ground and sky — removes the pale horizon line.
+  if (!solid) skyHorizTarget.lerp(skyTopTarget, HORIZON_FLATTEN);
   skyHorizBandTarget.copy(skyHorizTarget);
   const hsl = {}; base.getHSL(hsl);
   skyH = hsl.h; skyS = hsl.s; skyL = hsl.l;
