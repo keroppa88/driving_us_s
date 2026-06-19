@@ -525,8 +525,8 @@ const skyMat = new THREE.ShaderMaterial({
   uniforms: skyUniforms,
   vertexShader:   `varying vec3 vPos; void main(){ vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader: `uniform vec3 topColor,horizonColor,horizonBandColor; varying vec3 vPos;
-    void main(){ float h=clamp(normalize(vPos).y,0.0,1.0); float b=smoothstep(0.0,0.11,h);
-      vec3 lo=mix(horizonBandColor,horizonColor,b); gl_FragColor=vec4(mix(lo,topColor,pow(h,0.6)),1.0); }`,
+    void main(){ float h=clamp(normalize(vPos).y,0.0,1.0); float b=smoothstep(0.0,0.18,h);
+      vec3 lo=mix(horizonBandColor,horizonColor,b); gl_FragColor=vec4(mix(lo,topColor,pow(h,0.85)),1.0); }`,
   side: THREE.BackSide, depthWrite: false, depthTest: false,
 });
 const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(490,32,15), skyMat);
@@ -569,7 +569,7 @@ function setSkyFromColor(hex, solid = false) {
   skyIsBlack = hex.toLowerCase() === '#000000';
   const base = new THREE.Color(hex);
   skyTopTarget.copy(base).multiplyScalar(0.42);
-  skyHorizTarget = solid ? skyTopTarget.clone() : base.clone().lerp(new THREE.Color(0xddd8c8), 0.52);
+  skyHorizTarget = solid ? skyTopTarget.clone() : base.clone().lerp(new THREE.Color(0xddd8c8), 0.38);
   skyHorizBandTarget.copy(skyHorizTarget);
   const hsl = {}; base.getHSL(hsl);
   skyH = hsl.h; skyS = hsl.s; skyL = hsl.l;
