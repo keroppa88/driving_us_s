@@ -704,7 +704,7 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
         scale=0.9; cov=0.52; soft=0.18; skyMix=0.28;
         p = dir.xz/max(dir.y,0.30);
         p*=scale; p.x*=0.6;
-        fl=vec2(uTime*0.006, 0.0);
+        fl=vec2(uTime*0.12, 0.0);   // slow but visible left-right drift
       }
       vec2 sp=p+fl;
       // domain-warped fbm + finer detail octave for a non-flat, realistic break-up
@@ -724,8 +724,10 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
         col = mix(bright, uCloudColor, (1.0-lit)*0.30);
         col = mix(col, uSkyColor, 0.10);
       } else {
-        col = mix(uCloudColor, uLightColor, lit);
-        col = mix(col, uSkyColor, skyMix);
+        // 雲1: 最も暗い部分でも グレー2:ホワイト8 程度(黒くしない)
+        vec3 shadeDark = mix(vec3(1.0), vec3(0.5), 0.2);
+        col = mix(shadeDark, vec3(1.0), lit);
+        col = mix(col, uSkyColor, 0.06);
       }
       float a=dens*uOpacity*(distant?0.75:1.0);
       if(a<0.003) discard;
@@ -745,7 +747,7 @@ let cloudFlow   = 0;       // accumulated speed-driven forward flow (雲1)
     cloudTime += dt;
     // 雲1の前方フロー: 基本ドリフト + 走行速度連動
     const spd = (typeof cruiseSpeed !== 'undefined') ? cruiseSpeed : 0;
-    cloudFlow += dt * (0.10 + spd * 0.05);
+    cloudFlow += dt * (0.8 + spd * 0.3);
     cloudUniforms.uTime.value = cloudTime;
     cloudUniforms.uFlow.value = cloudFlow;
     cloudUniforms.uType.value = cloudType;
