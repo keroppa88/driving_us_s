@@ -692,13 +692,13 @@ let cloudTime   = 0;
       vec2 p = dir.xz/dir.y;
       vec2 fl; float scale, cov, soft, skyMix;
       if(!distant){
-        // 雲1: 立体的な積雲、奥→手前へ流れ空をある程度覆う
-        scale=0.85; cov=0.47; soft=0.26; skyMix=0.12;
+        // 雲1: 立体的な積雲、奥→手前へ流れ、空の約半分を覆う
+        scale=0.85; cov=0.40; soft=0.28; skyMix=0.12;
         p*=scale;
         fl=vec2(0.0, uTime*0.02);        // flow far -> near (along view depth)
       } else {
-        // 雲2: 地平線近くの遠景のみ、左右にゆっくり、空気遠近で空へ溶かす
-        scale=2.2; cov=0.55; soft=0.22; skyMix=0.30;
+        // 雲2: 地平線近くの遠景に小さく(空の約5%)、水墨画レベルの薄い陰影
+        scale=3.5; cov=0.70; soft=0.10; skyMix=0.40;
         p*=scale; p.x*=0.6;
         fl=vec2(uTime*0.006, 0.0);
       }
@@ -710,15 +710,16 @@ let cloudTime   = 0;
       float d=base*0.8+detail*0.2;
       float dens=smoothstep(cov, cov+soft, d);
       if(!distant){
-        dens*=smoothstep(0.015,0.14,dir.y);                         // fade into horizon
+        dens*=smoothstep(0.015,0.14,dir.y);                          // fade into horizon
       } else {
-        dens*=smoothstep(0.015,0.05,dir.y)*smoothstep(0.34,0.10,dir.y); // distant low band only
+        dens*=smoothstep(0.015,0.04,dir.y)*smoothstep(0.22,0.06,dir.y); // distant low band only
       }
       // density-based shading (brighter cores) instead of flat fill
       float lit=smoothstep(cov, cov+0.5, d);
-      vec3 col=mix(uCloudColor, uLightColor, lit);
+      // 雲2 は立体感を抑えた水墨画ふうの薄い陰影
+      vec3 col=mix(uCloudColor, uLightColor, distant ? lit*0.5 : lit);
       col=mix(col, uSkyColor, skyMix);     // aerial perspective / cohesion with sky
-      float a=dens*uOpacity*(distant?0.85:1.0);
+      float a=dens*uOpacity*(distant?0.65:1.0);
       if(a<0.003) discard;
       gl_FragColor=vec4(col, a);
     }`;
