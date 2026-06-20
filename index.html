@@ -593,6 +593,26 @@ function setSkyFromColor(hex, solid = false) {
 function setSkyHorizBand(hex) {
   if (hex) skyHorizBandTarget.set(hex); else skyHorizBandTarget.copy(skyHorizTarget);
 }
+// musiclistの「空#xxxxxx」: 空のてっぺん色を加工せず直接(生)設定。3バーの空色を再現する経路。
+function setSkyTopRaw(hex) {
+  skyIsBlack = hex.toLowerCase() === '#000000';
+  skyTopTarget.set(hex);
+  const h = {}; skyTopTarget.getHSL(h);
+  skyH = h.h; skyS = h.s; skyL = h.l;
+  syncSkySliders();
+}
+// musiclistの「地平線#xxxxxx」: 地平線色を加工せず直接(生)上書き。
+function applyHorizDirective(hex) {
+  if (hex) {
+    skyHorizTarget.set(hex);
+    skyHorizBandTarget.copy(skyHorizTarget);
+    const h = {}; skyHorizTarget.getHSL(h);
+    horizH = h.h; horizS = h.s; horizL = h.l;
+    syncSkySliders();
+  } else {
+    setSkyHorizBand(null);
+  }
+}
 setSkyFromColor('#9bbae8');
 
 // ─────────────────────────────────────────────
@@ -905,15 +925,19 @@ function parseSongLine(l) {
   const url=urlM[0], rest=l.slice(urlM.index+url.length).trim();
   const nameM=rest.match(/「([^」]*)」/); const name=nameM?nameM[1]:'';
   const kw=rest.replace(/「[^」]*」/,'');
-  const colorM=kw.match(/#[0-9a-fA-F]{6}/); const color=colorM?colorM[0]:null;
-  const horizM=kw.match(/地平線(#[0-9a-fA-F]{6})/); const horiz=horizM?horizM[1]:null;
+  // 「空#」「地平線#」はスペース(半角/全角)を挟んでもよい
+  const horizM=kw.match(/地平線[ 　]*(#[0-9a-fA-F]{6})/); const horiz=horizM?horizM[1]:null;
+  const skyRawM=kw.match(/空[ 　]*(#[0-9a-fA-F]{6})/); const skyRaw=skyRawM?skyRawM[1]:null;
+  // 「空#」「地平線#」を除いた残りから従来の単一色(#xxxxxx, ×0.42加工)を拾う
+  const kwPlain=kw.replace(/地平線[ 　]*#[0-9a-fA-F]{6}/g,'').replace(/空[ 　]*#[0-9a-fA-F]{6}/g,'');
+  const colorM=kwPlain.match(/#[0-9a-fA-F]{6}/); const color=colorM?colorM[0]:null;
   const volM=kw.match(/音量([+-]?\d+)[%％]/); const volAdj=volM?1+parseInt(volM[1])/100:1;
   const startM=kw.match(/開始(\d+)秒/); const startSec=startM?parseInt(startM[1]):0;
   const isYT=/youtube\.com|youtu\.be/.test(url);
   const vid=isYT?(url.match(/[?&]v=([^&]+)/)?.[1]||url):url.replace(/&amp;/g,'&');
   // 空デコ: 雲2→3, 雲1→2, 星→1, なし→0
   const deco=/雲2/.test(kw)?3:/雲1/.test(kw)?2:/星/.test(kw)?1:0;
-  return {id:vid,type:isYT?'yt':'radio',name,color,rain:/雨/.test(kw),star:/星/.test(kw),deco,solid:/単色/.test(kw),horiz,volAdj,startSec};
+  return {id:vid,type:isYT?'yt':'radio',name,color,skyRaw,rain:/雨/.test(kw),star:/星/.test(kw),deco,solid:/単色/.test(kw),horiz,volAdj,startSec};
 }
 
 async function loadPlaylist() {
@@ -991,7 +1015,8 @@ function playTrack(track, label) {
   connectingEl.style.display='block';
   setDisp(connectingEl,label,{suffix:'　接続中・・・'});
   if(track.color) setSkyFromColor(track.color,!!track.solid);
-  setSkyHorizBand(track.horiz);
+  if(track.skyRaw) setSkyTopRaw(track.skyRaw);
+  applyHorizDirective(track.horiz);
   rainActive=!!track.rain; skyDecoMode=track.deco??(track.star?1:0); applySkyDeco();
   btnRain.classList.toggle('active',rainActive);
   baseVol=parseInt(ytVolSlider.value); currentVolAdj=track.volAdj??1;
@@ -1079,7 +1104,8 @@ async function initYTPlayer() {
                   nowPlayingLabel=lbl;
                   setDisp(trackBarEl,lbl,{prefix:'▶  '});
                   if(next.color) setSkyFromColor(next.color,!!next.solid);
-                  setSkyHorizBand(next.horiz);
+                  if(next.skyRaw) setSkyTopRaw(next.skyRaw);
+                  applyHorizDirective(next.horiz);
                   rainActive=!!next.rain; skyDecoMode=next.deco??(next.star?1:0); applySkyDeco();
                   btnRain.classList.toggle('active',rainActive);
                   currentVolAdj=next.volAdj??1; applyVolAdj();
@@ -1419,6 +1445,23 @@ window.addEventListener('mousemove',e=>{
   mouseLastX=e.clientX;mouseLastY=e.clientY;
 });
 
+// 隠しコマンド: ↑↑↓↓←→←→ 音量 で 空色/地平線色のHEX表示をトグル
+const KONAMI = ['up','up','down','down','left','right','left','right','sound'];
+let konamiIdx = 0;
+let colorHudOn = false;
+const colorHudEl = document.createElement('div');
+colorHudEl.id = 'color-hud';
+colorHudEl.style.cssText = 'position:absolute;top:30px;left:11px;z-index:11;pointer-events:none;font-size:clamp(9px,2.4vw,13px);color:rgba(185,215,185,.92);text-shadow:0 0 5px rgba(0,220,0,.35);line-height:1.4;display:none;letter-spacing:.03em;';
+wrapper.appendChild(colorHudEl);
+function konamiInput(tok){
+  konamiIdx = (tok===KONAMI[konamiIdx]) ? konamiIdx+1 : (tok===KONAMI[0] ? 1 : 0);
+  if(konamiIdx===KONAMI.length){
+    konamiIdx = 0;
+    colorHudOn = !colorHudOn;
+    colorHudEl.style.display = colorHudOn ? 'block' : 'none';
+  }
+}
+
 // D-pad
 let dpadHoldTimer=null, dpadHoldInterval=null;
 function clearDpadHold(){ clearTimeout(dpadHoldTimer); clearInterval(dpadHoldInterval); dpadHoldTimer=dpadHoldInterval=null; }
@@ -1426,6 +1469,7 @@ document.querySelectorAll('.dpad-btn').forEach(btn=>{
   const dir=btn.dataset.dir; if(!dir)return;
   const press=()=>{
     btn.classList.add('pressed');
+    konamiInput(dir);
     if(dir==='up'){
       selectTrack(-1);
       dpadHoldTimer=setTimeout(()=>{ dpadHoldInterval=setInterval(()=>selectTrack(-5),200); },500);
@@ -1598,6 +1642,7 @@ btnAuto.addEventListener('click',()=>{
 });
 
 btnSoundBtn.addEventListener('click',()=>{
+  konamiInput('sound');
   soundPanel.style.display=soundPanel.style.display==='flex'?'none':'flex';
 });
 
@@ -1774,6 +1819,13 @@ function animate(){
   skyUniforms.horizonBandColor.value.lerp(skyHorizBandTarget,sp);
   scene.fog.color.lerp(GROUND_FOG_COLOR,sp);
   skyMesh.position.copy(camera.position);
+
+  if(colorHudOn){
+    // 遷移途中ではなく最終目標色を表示(途中の値は僅かに暗くズレるため)。
+    // 「空#… 地平線#…」をmusiclistに手入力すれば3バーの見た目を再現できる。
+    colorHudEl.textContent='空#'+skyTopTarget.getHexString().toUpperCase()
+      +'　地平線#'+skyHorizTarget.getHexString().toUpperCase();
+  }
 
   window._updateRain();
   window._updateStars();
