@@ -223,7 +223,6 @@ input[type=range]::-moz-range-thumb { width:9px; height:26px; background:repeati
   transition:color .15s; color:#6aba6a;
 }
 .toggle-btn svg { width:55%; height:55%; }
-#btn-star svg { width:98%; height:98%; }
 .toggle-btn:active { box-shadow:inset 3px 3px 8px rgba(0,0,0,.95); transform:scale(.96); }
 .toggle-btn.active { color:#ffffff; }
 .toggle-label { font-size:clamp(7px,1.9vw,10px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
@@ -783,9 +782,9 @@ let cloudDrift  = 0;       // accumulated left-right drift
 // Sky-decoration button cycle: 0=none, 1=stars, 2=cloud1, 3=cloud2
 let skyDecoMode = 0;
 const SKY_DECO_ICON = [
-  // 0: combined star + cloud (resting) — 上に星・下に雲
-  '<polygon points="12,1 13.62,5.78 18.66,5.84 14.62,8.85 16.12,13.66 12,10.75 7.88,13.66 9.38,8.85 5.34,5.84 10.38,5.78" fill="currentColor"/><circle cx="5.5" cy="20" r="2.2" fill="currentColor"/><circle cx="9" cy="18" r="3" fill="currentColor"/><circle cx="12" cy="17.3" r="3.3" fill="currentColor"/><circle cx="15" cy="18" r="3" fill="currentColor"/><circle cx="18.5" cy="20" r="2.2" fill="currentColor"/><rect x="5" y="19" width="14" height="3" fill="currentColor"/>',
-  // 1: star
+  // 0: 星(オフ=緑) — 元の星ボタン
+  '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" fill="currentColor"/>',
+  // 1: 星(点灯=白)
   '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" fill="currentColor"/>',
   // 2: cloud (雲1)
   '<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" fill="currentColor"/>',
