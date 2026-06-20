@@ -782,8 +782,8 @@ let cloudDrift  = 0;       // accumulated left-right drift
 // Sky-decoration button cycle: 0=none, 1=stars, 2=cloud1, 3=cloud2
 let skyDecoMode = 0;
 const SKY_DECO_ICON = [
-  // 0: combined star + cloud (resting)
-  '<path d="M17 13h-1.05A6 6 0 107 21h10a4 4 0 000-8z" fill="currentColor"/><polygon points="9 2 10.2 5.3 13.7 5.5 11 7.8 11.9 11.2 9 9.4 6.1 11.2 7 7.8 4.3 5.5 7.8 5.3" fill="currentColor"/>',
+  // 0: combined star + cloud (resting) — 上に星・下に雲
+  '<polygon points="12,2 13.1,5.3 16.6,5.3 13.8,7.4 14.8,10.7 12,8.7 9.2,10.7 10.2,7.4 7.4,5.3 10.9,5.3" fill="currentColor"/><circle cx="7" cy="16.2" r="2.6" fill="currentColor"/><circle cx="10.5" cy="14" r="3.2" fill="currentColor"/><circle cx="14" cy="14.6" r="3" fill="currentColor"/><circle cx="17.5" cy="16.2" r="2.6" fill="currentColor"/><rect x="6.5" y="15.6" width="11" height="3.6" fill="currentColor"/>',
   // 1: star
   '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" fill="currentColor"/>',
   // 2: cloud (雲1)
