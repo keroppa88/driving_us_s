@@ -57,9 +57,7 @@ https://www.youtube.com/watch?v=oVW6wJ7MYDM   「The Beatles,Come Together (1969
 https://www.youtube.com/watch?v=j_JaDDcyIIU   「The Beatles,Yellow Submarine (1969)」#ffeb0a
 https://www.youtube.com/watch?v=N9JN4aqMduo   「Jerry Wallace,Lovers Of The World マンダム～男の世界 (1970)」#edcc68　地平線#91afc7
 https://www.youtube.com/watch?v=37dw2r45Xzg	　「Leon Russell,Song For You (1970)」	#c98c2a　地平線#b1c92a
-
 https://www.youtube.com/watch?v=ymAlU3ImKxA	　「Herbie Hancock,Cat Call (1970)」	#817491　地平線#c92aaa
-
 https://www.youtube.com/watch?v=4G-YQA_bsOU   「Simon & Garfunkel,Bridge Over Troubled Water (1970)」
 https://www.youtube.com/watch?v=u1V8YRJnr4Q   「Creedence Clearwater Revival,Have You Ever Seen The Rain (1970)」 雨
 https://www.youtube.com/watch?v=Wh2kwpnQu6c   「John Denver,Take Me Home Country Roads (1971)」
@@ -133,6 +131,7 @@ https://www.youtube.com/watch?v=djV11Xbc914	　「a-ha,Take On Me (1985)」
 https://www.youtube.com/watch?v=bgmMpT_m-t4	　「Stevie Wonder,Part-Time Lover (1985)」	
 https://www.youtube.com/watch?v=c5BL4RNFr58	　「James Brown,Living in America (1985)」	#0099ff　地平線#33ccff
 https://www.youtube.com/watch?v=mIqhl0rH0Wc   「USA For Arica,We Are The World (1985)」#6eebe0
+https://www.youtube.com/watch?v=TeaKAB-IxOE   「Elsa,T'en Va Pas(1986)」
 https://www.youtube.com/watch?v=siwpn14IE7E	　「Kenny Loggins,Danger Zone (1986)」	
 https://www.youtube.com/watch?v=Bx51eegLTY8	　「Berlin,Take My Breath Away (1986)」	#0099ff
 https://www.youtube.com/watch?v=G2zxzaWgVRA   「Sarah Brightman & Steve Harley,The Phantom Of The Opera (1986)」
