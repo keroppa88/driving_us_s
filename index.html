@@ -350,6 +350,13 @@ body.screen-only #screen-wrapper::before { display:none; }
             <div class="slider-col">
               <div class="tick-row"></div>
               <div class="slider-inline">
+                <input type="range" id="sky-sat-slider" min="0" max="100" value="63">
+                <span class="color-side-label">彩度</span>
+              </div>
+            </div>
+            <div class="slider-col">
+              <div class="tick-row"></div>
+              <div class="slider-inline">
                 <input type="range" id="sky-bright-slider" min="0" max="100" value="89">
                 <span class="color-side-label">明暗</span>
               </div>
@@ -557,13 +564,16 @@ function applySkySliders() {
 
 function syncSkySliders() {
   const colorEl = document.getElementById('sky-color-slider');
+  const satEl = document.getElementById('sky-sat-slider');
   const brightEl = document.getElementById('sky-bright-slider');
-  if (!colorEl || !brightEl) return;
+  if (!colorEl || !satEl || !brightEl) return;
   if (skySliderMode === 0) {
     colorEl.value = Math.round(skyH * 100);
+    satEl.value = Math.round(skyS * 100);
     brightEl.value = Math.round(Math.max(0, Math.min(100, (skyL - 0.1) / 0.88 * 100)));
   } else {
     colorEl.value = Math.round(horizH * 100);
+    satEl.value = Math.round(horizS * 100);
     brightEl.value = Math.round(Math.max(0, Math.min(100, (horizL - 0.1) / 0.88 * 100)));
   }
 }
@@ -901,7 +911,9 @@ function parseSongLine(l) {
   const startM=kw.match(/開始(\d+)秒/); const startSec=startM?parseInt(startM[1]):0;
   const isYT=/youtube\.com|youtu\.be/.test(url);
   const vid=isYT?(url.match(/[?&]v=([^&]+)/)?.[1]||url):url.replace(/&amp;/g,'&');
-  return {id:vid,type:isYT?'yt':'radio',name,color,rain:/雨/.test(kw),star:/星/.test(kw),solid:/単色/.test(kw),horiz,volAdj,startSec};
+  // 空デコ: 雲2→3, 雲1→2, 星→1, なし→0
+  const deco=/雲2/.test(kw)?3:/雲1/.test(kw)?2:/星/.test(kw)?1:0;
+  return {id:vid,type:isYT?'yt':'radio',name,color,rain:/雨/.test(kw),star:/星/.test(kw),deco,solid:/単色/.test(kw),horiz,volAdj,startSec};
 }
 
 async function loadPlaylist() {
@@ -980,7 +992,7 @@ function playTrack(track, label) {
   setDisp(connectingEl,label,{suffix:'　接続中・・・'});
   if(track.color) setSkyFromColor(track.color,!!track.solid);
   setSkyHorizBand(track.horiz);
-  rainActive=!!track.rain; skyDecoMode=track.star?1:0; applySkyDeco();
+  rainActive=!!track.rain; skyDecoMode=track.deco??(track.star?1:0); applySkyDeco();
   btnRain.classList.toggle('active',rainActive);
   baseVol=parseInt(ytVolSlider.value); currentVolAdj=track.volAdj??1;
   applyVolAdj();
@@ -1068,7 +1080,7 @@ async function initYTPlayer() {
                   setDisp(trackBarEl,lbl,{prefix:'▶  '});
                   if(next.color) setSkyFromColor(next.color,!!next.solid);
                   setSkyHorizBand(next.horiz);
-                  rainActive=!!next.rain; skyDecoMode=next.star?1:0; applySkyDeco();
+                  rainActive=!!next.rain; skyDecoMode=next.deco??(next.star?1:0); applySkyDeco();
                   btnRain.classList.toggle('active',rainActive);
                   currentVolAdj=next.volAdj??1; applyVolAdj();
                   seekOnPlay=next.startSec>0?next.startSec:null;
@@ -1345,6 +1357,7 @@ ytVolSlider.addEventListener('input',e=>{
 });
 
 const skyColorSlider = document.getElementById('sky-color-slider');
+const skySatSlider = document.getElementById('sky-sat-slider');
 const skyBrightSlider = document.getElementById('sky-bright-slider');
 skyColorSlider.addEventListener('input', e => {
   const v = e.target.value / 100;
@@ -1357,6 +1370,12 @@ skyColorSlider.addEventListener('input', e => {
     if (horizS === 0) horizS = 0.6;
     if (horizL === 0) horizL = 0.1;
   }
+  applySkySliders();
+});
+skySatSlider.addEventListener('input', e => {
+  const v = e.target.value / 100;
+  if (skySliderMode === 0) { skyS = v; }
+  else { horizS = v; }
   applySkySliders();
 });
 skyBrightSlider.addEventListener('input', e => {
