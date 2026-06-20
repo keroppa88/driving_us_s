@@ -788,8 +788,8 @@ const SKY_DECO_ICON = [
   '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" fill="currentColor"/>',
   // 2: cloud (雲1)
   '<path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" fill="currentColor"/>',
-  // 3: cloud + small mark (雲2)
-  '<path d="M18 11h-1.26A8 8 0 109 21h9a5 5 0 000-10z" fill="currentColor"/><circle cx="19" cy="5" r="1.6" fill="currentColor"/>',
+  // 3: 雲2 — 細長い小さい雲3つ
+  '<ellipse cx="9" cy="7" rx="5" ry="1.5" fill="currentColor"/><ellipse cx="15.5" cy="12" rx="5.5" ry="1.6" fill="currentColor"/><ellipse cx="9.5" cy="17" rx="5" ry="1.5" fill="currentColor"/>',
 ];
 function applySkyDeco(){
   starActive  = (skyDecoMode===1);
