@@ -1846,7 +1846,7 @@ function animate(){
   // 空(上空/地平線)の明るさが下がるほど地面ライトを落とし、暗くなると点灯。
   const _lum=c=>0.2126*c.r+0.7152*c.g+0.0722*c.b;
   const b=Math.max(_lum(skyUniforms.topColor.value),_lum(skyUniforms.horizonColor.value));
-  const k=Math.max(0.06,Math.min(1,b/0.40));
+  const k=Math.max(0.02,Math.min(1,b/0.40));
   ambient.intensity=AMBIENT_BASE*k;
   sun.intensity=SUN_BASE*k;
   // 砂漠なので空が暗いと地上(遠景平面＋フォグ)はほぼ真っ暗へ(急カーブで黒)。
