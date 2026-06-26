@@ -1306,12 +1306,16 @@ function updateAllTrafficCars(dt){
 // ─────────────────────────────────────────────
 //  GLTF LOADER (main environment)
 // ─────────────────────────────────────────────
+// 地面マップGLBはライト非依存のことがあるため、マテリアル色を毎フレーム
+// ×k で直接暗くする。読み込み時に {mat, 元色} を集めておく。
+const nightMats = [];
+function collectNightMat(mat){ if(mat && mat.color) nightMats.push({mat, base:mat.color.clone()}); }
 function loadSpecialModel(file,px,py,pz){
   return new Promise(resolve=>{
     new GLTFLoader().load(file+'?v='+Date.now(),gltf=>{
       const m=gltf.scene;
       m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;mat.needsUpdate=true;};
+        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;mat.needsUpdate=true;collectNightMat(mat);};
         Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
       m.scale.set(.4,.4,.4);m.position.set(px,py,pz);m.visible=false;scene.add(m);
       const mc=m.clone();mc.position.set(px,py,pz-LOOP_LENGTH);mc.visible=false;scene.add(mc);
@@ -1323,7 +1327,7 @@ function loadSpecialModel(file,px,py,pz){
 new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
   const model=gltf.scene;
   model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;};
+    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;collectNightMat(m);};
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
   model.scale.set(.4,.4,.4); model.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(model), cen=box.getCenter(new THREE.Vector3());
@@ -1854,6 +1858,8 @@ function animate(){
   const gd=_grdTmp.copy(GROUND_FOG_COLOR).multiplyScalar(kg);
   scene.fog.color.lerp(gd,sp);
   extDesertPlane.material.color.copy(gd);
+  // 地面GLB(ライト非依存)の色を直接×kgで暗くする(夜は道路/砂漠が判別不能に)。
+  for(let i=0;i<nightMats.length;i++){ nightMats[i].mat.color.copy(nightMats[i].base).multiplyScalar(kg); }
   // ヘッドライト: 暗くなる(k<~0.45)とフェードイン。前方やや下＋左右に分離した2灯。
   // 明暗が最も暗いとき(b≲0.10)だけヘッドライト点灯。
   const headOn=Math.max(0,Math.min(1,(0.10-b)/0.08));
