@@ -634,7 +634,7 @@ scene.add(sun);
 
 // Headlights: two forward-facing spot lights that switch on when it gets dark.
 function makeHeadlight(){
-  const s = new THREE.SpotLight(0xfff0cc, 0, 0, 0.5, 0.7, 0); // warm, soft edge, decay 0
+  const s = new THREE.SpotLight(0xffd58a, 0, 0, 0.5, 0.7, 0); // 暖色, soft edge, decay 0
   s.visible = false;
   scene.add(s); scene.add(s.target);
   return s;
@@ -1868,7 +1868,7 @@ function animate(){
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
     const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*6, spread=EYE_HEIGHT*1.8;
-    const lit=9*headOn;
+    const lit=14*headOn;
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
       lt.visible=true; lt.intensity=lit;
       lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
