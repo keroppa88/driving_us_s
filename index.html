@@ -625,10 +625,22 @@ camera.position.set(0, EYE_HEIGHT, -5);
 // ─────────────────────────────────────────────
 //  LIGHTING
 // ─────────────────────────────────────────────
-scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+const ambient = new THREE.AmbientLight(0xffffff, 1.5);
+scene.add(ambient);
+const AMBIENT_BASE = 1.5, SUN_BASE = 1.0;
 const sun = new THREE.DirectionalLight(0xffffff, 1.0);
 sun.position.set(50, 100, 50);
 scene.add(sun);
+
+// Headlights: two forward-facing spot lights that switch on when it gets dark.
+function makeHeadlight(){
+  const s = new THREE.SpotLight(0xfff0cc, 0, 0, 0.5, 0.7, 0); // warm, soft edge, decay 0
+  s.visible = false;
+  scene.add(s); scene.add(s.target);
+  return s;
+}
+const headL = makeHeadlight(), headR = makeHeadlight();
+const _hFwd = new THREE.Vector3(), _hRt = new THREE.Vector3(), _hEul = new THREE.Euler(0,0,0,'YXZ');
 
 // ─────────────────────────────────────────────
 //  GROUND
@@ -695,8 +707,8 @@ const CLOUD_CFG = {
     warp:1.6,      // 形のうねり(大きいほど複雑)
     detail:0.8,    // 細部の量(0〜1, 大きいほどチラつきやすい)
     proj:0.06,     // 投影クランプ(小さいほど地平線方向に伸びる)
-    minY:0.04,     // 雲が出る最低の高さ(≈山の高さ。ここからぼかし始め)
-    band:0.06,     // 出始めのフェード幅(山の高さ→1.5倍あたりで徐々に出現)
+    minY:0.18,     // 雲が出る最低の高さ(大きいほど雲が高い位置に)
+    band:0.10,     // 出始めのフェード幅(山の高さ→1.5倍あたりで徐々に出現)
     flowBase:0.05,  // 停車時の流れ速度
     flowSpeed:0.06, // 走行速度への連動係数
     drift:0.0,     // 左右ドリフト
@@ -738,13 +750,14 @@ let cloudDrift  = 0;       // accumulated left-right drift
     uWarp:{value:1.6}, uDetail:{value:1.0}, uProj:{value:0.06},
     uMinY:{value:0.22}, uBand:{value:0.05},
     uShadow:{value:0.8}, uLitSky:{value:0.5}, uShadowSky:{value:0.5}, uOpacity:{value:0.9},
+    uDarken:{value:1.0},   // ←雨天時に下げて雲をダークグレーにする
     uSkyColor:{value:new THREE.Color(0x4a6fa0)},  // 上空色
     uSkyHor:{value:new THREE.Color(0xc8daf0)},    // 地平線色
   };
   const cloudVert = `varying vec3 vDir; void main(){ vDir=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`;
   const cloudFrag = `
     precision highp float;
-    uniform float uTime,uFlow,uDrift,uCov,uSoft,uScale,uStretch,uWarp,uDetail,uProj,uMinY,uBand,uShadow,uLitSky,uShadowSky,uOpacity;
+    uniform float uTime,uFlow,uDrift,uCov,uSoft,uScale,uStretch,uWarp,uDetail,uProj,uMinY,uBand,uShadow,uLitSky,uShadowSky,uOpacity,uDarken;
     uniform vec3 uSkyColor, uSkyHor;
     varying vec3 vDir;
     float hash(vec2 p){ p=fract(p*vec2(123.34,345.45)); p+=dot(p,p+34.345); return fract(p.x*p.y); }
@@ -781,7 +794,7 @@ let cloudDrift  = 0;       // accumulated left-right drift
       vec3 col = mix(darkCol, litCol, lit);
       float a = dens*uOpacity;
       if(a<0.003) discard;
-      gl_FragColor=vec4(col, a);
+      gl_FragColor=vec4(col*uDarken, a);
     }`;
   const cloudMat = new THREE.ShaderMaterial({
     uniforms: U, vertexShader: cloudVert, fragmentShader: cloudFrag,
@@ -805,6 +818,9 @@ let cloudDrift  = 0;       // accumulated left-right drift
     U.uShadow.value=cfg.shadow; U.uLitSky.value=cfg.litSky; U.uShadowSky.value=cfg.shadowSky; U.uOpacity.value=cfg.opacity;
     U.uSkyColor.value.copy(skyUniforms.topColor.value);
     U.uSkyHor.value.copy(skyUniforms.horizonColor.value);
+    // 雨天時は雲をダークグレーの曇天色へ(スムーズ遷移)。雨が止めば通常へ戻る。
+    const dkTarget = (typeof rainActive!=='undefined' && rainActive) ? 0.34 : 1.0;
+    U.uDarken.value += (dkTarget-U.uDarken.value)*Math.min(dt*2,1);
     cloudDome.position.copy(camera.position);
   };
 }
@@ -1819,6 +1835,31 @@ function animate(){
   skyUniforms.horizonBandColor.value.lerp(skyHorizBandTarget,sp);
   scene.fog.color.lerp(GROUND_FOG_COLOR,sp);
   skyMesh.position.copy(camera.position);
+
+  // 空(上空/地平線)の明るさが下がるほど地面ライトを落とし、暗くなると点灯。
+  const _lum=c=>0.2126*c.r+0.7152*c.g+0.0722*c.b;
+  const b=Math.max(_lum(skyUniforms.topColor.value),_lum(skyUniforms.horizonColor.value));
+  const k=Math.max(0.06,Math.min(1,b/0.40));
+  ambient.intensity=AMBIENT_BASE*k;
+  sun.intensity=SUN_BASE*k;
+  // ヘッドライト: 暗くなる(k<~0.45)とフェードイン。前方やや下＋左右に分離した2灯。
+  const headOn=Math.max(0,Math.min(1,(0.45-k)/0.35));
+  if(headOn>0){
+    const eff=getEffectiveYaw();
+    _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
+    _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
+    const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*6, spread=EYE_HEIGHT*1.8;
+    const lit=9*headOn;
+    for(const [lt,sgn] of [[headL,-1],[headR,1]]){
+      lt.visible=true; lt.intensity=lit;
+      lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
+      lt.position.y=EYE_HEIGHT*0.75;
+      lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*spread);
+      lt.target.position.y=0; lt.target.updateMatrixWorld();
+    }
+  } else {
+    headL.visible=headR.visible=false;
+  }
 
   if(colorHudOn){
     // 遷移途中ではなく最終目標色を表示(途中の値は僅かに暗くズレるため)。
