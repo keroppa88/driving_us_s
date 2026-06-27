@@ -1921,10 +1921,14 @@ function animate(){
   for(let i=0;i<nightMats.length;i++){ nightMats[i].mat.color.copy(nightMats[i].base).multiplyScalar(kg); }
   // ヘッドライト: 手動ONなら常時点灯、それ以外は暗いとき(b≲0.10)自動点灯。
   const autoHeadOn = Math.max(0,Math.min(1,(0.10-b)/0.08));
+  // 明暗スライダー(0..100を20分割)に応じた照明フェード。
+  // 明暗0で全開、下から2/20(=値10)でゼロ、それ以上は照明オン無効(白飛び防止)。
+  const _bvN = Math.max(0,Math.min(1,(Math.max(skyL,horizL)-0.1)/0.88));
+  const lightFade = _bvN >= 0.10 ? 0 : (1 - _bvN/0.10);
   // 自動点灯した瞬間(明暗最低でライトON)に一度だけ色調・彩度を補正。手動ONは対象外。
-  if(autoHeadOn>0 && _autoLightPrev===0 && !lightManualOn) applyAutoLightColorFix();
-  _autoLightPrev = autoHeadOn>0 ? 1 : 0;
-  const headOn = lightManualOn ? 1 : autoHeadOn;
+  if(autoHeadOn>0 && lightFade>0 && _autoLightPrev===0 && !lightManualOn) applyAutoLightColorFix();
+  _autoLightPrev = (autoHeadOn>0 && lightFade>0) ? 1 : 0;
+  const headOn = (lightManualOn ? 1 : autoHeadOn) * lightFade;
   if(headOn>0){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
