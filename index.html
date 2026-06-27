@@ -225,6 +225,9 @@ input[type=range]::-moz-range-thumb { width:9px; height:26px; background:repeati
 .toggle-btn svg { width:55%; height:55%; }
 .toggle-btn:active { box-shadow:inset 3px 3px 8px rgba(0,0,0,.95); transform:scale(.96); }
 .toggle-btn.active { color:#ddd6a8; }
+#btn-light { width:70%; color:#fff0a8; }            /* ライト: 黄色白・一回り小さい */
+#btn-light.active { color:#000; }                    /* 押すと黒(発動) */
+#btn-light svg { width:62%; height:62%; }
 .toggle-label { font-size:clamp(7px,1.9vw,10px); color:#000; font-weight:bold; text-align:center; white-space:nowrap; }
 .sky-switch {
   position:relative; display:flex; align-items:center; overflow:hidden;
@@ -363,6 +366,9 @@ body.screen-only #screen-wrapper::before { display:none; }
             </div>
           </div>
           <div id="sky-btns-col">
+            <button class="toggle-btn" id="btn-light">
+              <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
+            </button>
             <button class="toggle-btn" id="btn-star">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/>
@@ -1699,6 +1705,13 @@ btnSoundBtn.addEventListener('click',()=>{
 
 const btnRain = document.getElementById('btn-rain');
 const btnStar = document.getElementById('btn-star');
+// ライト手動ON/OFF: ONで常時点灯(どんな空でも発動・明るい空では見えにくい)。
+let lightManualOn = false;
+const btnLight = document.getElementById('btn-light');
+btnLight.addEventListener('click', () => {
+  lightManualOn = !lightManualOn;
+  btnLight.classList.toggle('active', lightManualOn);
+});
 btnRain.addEventListener('click', () => {
   rainActive = !rainActive;
   btnRain.classList.toggle('active', rainActive);
@@ -1883,9 +1896,8 @@ function animate(){
   extDesertPlane.material.color.copy(gd);
   // 地面GLB(ライト非依存)の色を直接×kgで暗くする(夜は道路/砂漠が判別不能に)。
   for(let i=0;i<nightMats.length;i++){ nightMats[i].mat.color.copy(nightMats[i].base).multiplyScalar(kg); }
-  // ヘッドライト: 暗くなる(k<~0.45)とフェードイン。前方やや下＋左右に分離した2灯。
-  // 明暗が最も暗いとき(b≲0.10)だけヘッドライト点灯。
-  const headOn=Math.max(0,Math.min(1,(0.10-b)/0.08));
+  // ヘッドライト: 手動ONなら常時点灯、それ以外は暗いとき(b≲0.10)自動点灯。
+  const headOn = lightManualOn ? 1 : Math.max(0,Math.min(1,(0.10-b)/0.08));
   if(headOn>0){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
