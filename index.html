@@ -1924,17 +1924,22 @@ function animate(){
   // 明暗0で全開、下から30%でゼロ、それ以上は照明オン無効(白飛び防止)。
   const _bvN = Math.max(0,Math.min(1,(Math.max(skyL,horizL)-0.1)/0.88));
   const lightFade = _bvN >= 0.30 ? 0 : (1 - _bvN/0.30);
-  // 30%以下に入りライトが点く瞬間に一度だけ色調・彩度を補正。手動ONは対象外。
-  if(lightFade>0 && _autoLightPrev===0 && !lightManualOn) applyAutoLightColorFix();
-  _autoLightPrev = lightFade>0 ? 1 : 0;
-  // 明暗30%以下なら点灯(フェード)。手動ONでも上限は同じフェード。
-  const headOn = lightFade;
+  // 明暗が最低値になった瞬間に自動点灯＋色調/彩度を一度だけ補正。
+  // 以後はユーザーがボタンでON/OFF自由(再点灯も可)。それ以外の明暗でも手動ON/OFF可。
+  const _atMin = _bvN <= 0.001;
+  if(_atMin && _autoLightPrev===0){
+    lightManualOn = true; btnLight.classList.add('active');
+    applyAutoLightColorFix();
+  }
+  _autoLightPrev = _atMin ? 1 : 0;
+  // 点灯はユーザー意思(lightManualOn)で決定。強度は明暗フェード(30%超は0=白飛び防止)。
+  const headOn = lightManualOn ? lightFade : 0;
   if(headOn>0){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
     const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*7.5, spread=EYE_HEIGHT*2.3;
-    const lit=17*headOn;
+    const lit=13.6*headOn;
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
       lt.visible=true; lt.intensity=lit;
       lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
@@ -1944,7 +1949,7 @@ function animate(){
     }
     // 地面の光だまり(加算): 暗いunlit地面でも照射部を明るく見せる。
     for(const [pool,sgn] of [[poolL,-1],[poolR,1]]){
-      pool.visible=true; pool.material.opacity=Math.min(1,headOn*1.08);
+      pool.visible=true; pool.material.opacity=Math.min(1,headOn*0.864);
       pool.position.copy(camera.position).addScaledVector(_hFwd,throwD*0.55).addScaledVector(_hRt,sgn*spread*0.5);
       pool.position.y=0.06;
       pool.rotation.y=eff;
