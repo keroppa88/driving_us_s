@@ -535,6 +535,9 @@ function _deGreenColor(c){ const a=(c.r+c.b)*0.5; if(c.g>a) c.g=a; } // 緑が�
 function deGreenMap(mat){
   if(!mat) return;
   if(mat.color) _deGreenColor(mat.color);          // 単色マテリアルの緑を中和
+  // 金属質の鏡面ハイライト(視点依存)は暗転時に皺/縦線として浮き出るため消す。
+  if(mat.metalness!==undefined) mat.metalness=0;
+  if(mat.roughness!==undefined) mat.roughness=1;
   if(mat.map && !mat._deGreened){                   // テクスチャ付きはdiffuseの緑も抑える
     mat.onBeforeCompile = (shader)=>{
       shader.fragmentShader = shader.fragmentShader.replace(
