@@ -1939,7 +1939,7 @@ function animate(){
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
     const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*7.5, spread=EYE_HEIGHT*2.3;
-    const lit=9*headOn;
+    const lit=5*headOn;
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
       lt.visible=true; lt.intensity=lit;
       lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
@@ -1949,12 +1949,12 @@ function animate(){
     }
     // 地面の光だまり(加算): 暗いunlit地面でも照射部を明るく見せる。
     for(const [pool,sgn] of [[poolL,-1],[poolR,1]]){
-      pool.visible=true; pool.material.opacity=Math.min(1,headOn*0.55);
-      pool.position.copy(camera.position).addScaledVector(_hFwd,throwD*0.55).addScaledVector(_hRt,sgn*spread*0.5);
+      pool.visible=true; pool.material.opacity=Math.min(1,headOn*0.28);
+      pool.position.copy(camera.position).addScaledVector(_hFwd,throwD*0.35).addScaledVector(_hRt,sgn*spread*0.5);
       pool.position.y=0.06;
       pool.rotation.y=eff;
-    // 横幅・高さ・奥行
-      pool.scale.set(spread*1.8,2, throwD*5.5);
+    // 横幅・高さ・奥行(手前に限定し遠方の浅角モアレを照らさない)
+      pool.scale.set(spread*1.4,2, throwD*2.2);
     }
   } else {
     headL.visible=headR.visible=false;
