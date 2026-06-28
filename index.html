@@ -509,7 +509,7 @@ const SAMEDIR_EXIT_DIST    = CAR_SPAWN_OFFSET_ABS + LOOP_LENGTH / 2;
 // ─────────────────────────────────────────────
 //  RENDERER
 // ─────────────────────────────────────────────
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true }); // 深度精度UP(スマホ16bitのZ-fightモアレ=緑筋を防ぐ)
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
@@ -665,7 +665,7 @@ function makeHeadPool(){
   const geo=new THREE.PlaneGeometry(1,1); geo.rotateX(-Math.PI/2);   // lay flat in XZ
   const m=new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
     map:_headPoolTex, transparent:true, blending:THREE.AdditiveBlending,
-    depthWrite:false, depthTest:false, fog:false, opacity:0 })); // depthTest無効で地面とのZ-fightを根絶
+    depthWrite:false, depthTest:true, fog:false, opacity:0 })); // Z-fightはlogarithmicDepthBufferで解消
   m.frustumCulled=false; m.visible=false; m.renderOrder=6; scene.add(m); return m;
 }
 const poolL = makeHeadPool(), poolR = makeHeadPool();
