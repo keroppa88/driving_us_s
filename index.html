@@ -528,6 +528,32 @@ function tuneTex(mat){
     }
   }
 }
+// 地面テクスチャに含まれる緑のまだら(緑線の正体)を読み込み時に中和する。
+// 緑が支配的な画素のGを赤/青の高い方まで下げ、緑味を消す。
+function deGreenMap(mat){
+  const t = mat && mat.map;
+  if(!t || !t.image) return;
+  const img = t.image;
+  const w = img.width||img.naturalWidth, h = img.height||img.naturalHeight;
+  if(!w || !h) return;
+  const cv = document.createElement('canvas'); cv.width=w; cv.height=h;
+  const ctx = cv.getContext('2d',{willReadFrequently:true});
+  try{ ctx.drawImage(img,0,0,w,h); }catch(e){ return; }
+  let id; try{ id = ctx.getImageData(0,0,w,h); }catch(e){ return; }
+  const d = id.data;
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i], g=d[i+1], b=d[i+2];
+    if(g>r && g>b){ d[i+1]=Math.max(r,b); } // 緑支配画素の緑味を中和
+  }
+  ctx.putImageData(id,0,0);
+  const nt = new THREE.CanvasTexture(cv);
+  nt.colorSpace=t.colorSpace; nt.wrapS=t.wrapS; nt.wrapT=t.wrapT;
+  nt.repeat.copy(t.repeat); nt.offset.copy(t.offset); nt.center.copy(t.center);
+  nt.rotation=t.rotation; nt.flipY=t.flipY;
+  nt.anisotropy=MAX_ANISO; nt.minFilter=THREE.LinearMipmapLinearFilter; nt.generateMipmaps=true;
+  nt.needsUpdate=true;
+  mat.map=nt; mat.needsUpdate=true;
+}
 
 function onResize() {
   const W = wrapper.clientWidth, H = wrapper.clientHeight;
@@ -1383,7 +1409,7 @@ function loadSpecialModel(file,px,py,pz){
     new GLTFLoader().load(file+'?v='+Date.now(),gltf=>{
       const m=gltf.scene;
       m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;tuneTex(mat);mat.needsUpdate=true;collectNightMat(mat);};
+        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;tuneTex(mat);deGreenMap(mat);mat.needsUpdate=true;collectNightMat(mat);};
         Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
       m.scale.set(.4,.4,.4);m.position.set(px,py,pz);m.visible=false;scene.add(m);
       const mc=m.clone();mc.position.set(px,py,pz-LOOP_LENGTH);mc.visible=false;scene.add(mc);
@@ -1395,7 +1421,7 @@ function loadSpecialModel(file,px,py,pz){
 new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
   const model=gltf.scene;
   model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;tuneTex(m);m.needsUpdate=true;collectNightMat(m);};
+    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;tuneTex(m);deGreenMap(m);m.needsUpdate=true;collectNightMat(m);};
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
   model.scale.set(.4,.4,.4); model.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(model), cen=box.getCenter(new THREE.Vector3());
