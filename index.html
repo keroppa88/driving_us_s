@@ -528,32 +528,19 @@ function tuneTex(mat){
     }
   }
 }
-// 地面テクスチャに含まれる緑のまだら(緑線の正体)を読み込み時に中和する。
-// 緑が支配的な画素のGを赤/青の高い方まで下げ、緑味を消す。
+// 地面テクスチャに含まれる緑のまだら(緑線の正体)をGPUシェーダーで確実に中和。
+// テクスチャ抽出後のdiffuseで「緑が赤青平均を超える分」を平均まで抑える。
+// onBeforeCompileで毎フレーム処理するため、画像デコードの状況に依存しない。
 function deGreenMap(mat){
-  const t = mat && mat.map;
-  if(!t || !t.image) return;
-  const img = t.image;
-  const w = img.width||img.naturalWidth, h = img.height||img.naturalHeight;
-  if(!w || !h) return;
-  const cv = document.createElement('canvas'); cv.width=w; cv.height=h;
-  const ctx = cv.getContext('2d',{willReadFrequently:true});
-  try{ ctx.drawImage(img,0,0,w,h); }catch(e){ return; }
-  let id; try{ id = ctx.getImageData(0,0,w,h); }catch(e){ return; }
-  const d = id.data;
-  for(let i=0;i<d.length;i+=4){
-    const r=d[i], g=d[i+1], b=d[i+2];
-    const avg=(r+b)*0.5;
-    if(g>avg+5){ d[i+1]=avg; } // 緑が赤青平均を超える画素(オリーブ含む)を中和
-  }
-  ctx.putImageData(id,0,0);
-  const nt = new THREE.CanvasTexture(cv);
-  nt.colorSpace=t.colorSpace; nt.wrapS=t.wrapS; nt.wrapT=t.wrapT;
-  nt.repeat.copy(t.repeat); nt.offset.copy(t.offset); nt.center.copy(t.center);
-  nt.rotation=t.rotation; nt.flipY=t.flipY;
-  nt.anisotropy=MAX_ANISO; nt.minFilter=THREE.LinearMipmapLinearFilter; nt.generateMipmaps=true;
-  nt.needsUpdate=true;
-  mat.map=nt; mat.needsUpdate=true;
+  if(!mat || mat._deGreened) return;
+  mat._deGreened = true;
+  mat.onBeforeCompile = (shader)=>{
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      '#include <map_fragment>\n {float _a=(diffuseColor.r+diffuseColor.b)*0.5; if(diffuseColor.g>_a) diffuseColor.g=_a;}'
+    );
+  };
+  mat.needsUpdate = true;
 }
 
 function onResize() {
