@@ -513,6 +513,22 @@ const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicD
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
+// 浅い角度の地面テクスチャで出る色モアレ(緑筋)対策: 異方性フィルタ＋ミップマップ。
+const MAX_ANISO = renderer.capabilities.getMaxAnisotropy();
+function tuneTex(mat){
+  if(!mat) return;
+  for(const key of ['map','roughnessMap','metalnessMap','normalMap','emissiveMap','aoMap']){
+    const t = mat[key];
+    if(t){
+      t.anisotropy = MAX_ANISO;
+      t.minFilter = THREE.LinearMipmapLinearFilter;
+      t.magFilter = THREE.LinearFilter;
+      t.generateMipmaps = true;
+      t.needsUpdate = true;
+    }
+  }
+}
+
 function onResize() {
   const W = wrapper.clientWidth, H = wrapper.clientHeight;
   renderer.setSize(W, H, false);
@@ -1366,7 +1382,7 @@ function loadSpecialModel(file,px,py,pz){
     new GLTFLoader().load(file+'?v='+Date.now(),gltf=>{
       const m=gltf.scene;
       m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;mat.needsUpdate=true;collectNightMat(mat);};
+        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;tuneTex(mat);mat.needsUpdate=true;collectNightMat(mat);};
         Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
       m.scale.set(.4,.4,.4);m.position.set(px,py,pz);m.visible=false;scene.add(m);
       const mc=m.clone();mc.position.set(px,py,pz-LOOP_LENGTH);mc.visible=false;scene.add(mc);
@@ -1378,7 +1394,7 @@ function loadSpecialModel(file,px,py,pz){
 new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
   const model=gltf.scene;
   model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;collectNightMat(m);};
+    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;tuneTex(m);m.needsUpdate=true;collectNightMat(m);};
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
   model.scale.set(.4,.4,.4); model.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(model), cen=box.getCenter(new THREE.Vector3());
