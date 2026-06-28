@@ -1938,7 +1938,7 @@ function animate(){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
-    const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*7.5, spread=EYE_HEIGHT*2.3;
+    const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*3.75, spread=EYE_HEIGHT*2.3;
     const lit=5*headOn;
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
       lt.visible=true; lt.intensity=lit;
