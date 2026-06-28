@@ -556,7 +556,7 @@ function applyGroundMask(mat){
       '#include <begin_vertex>\n vWPosM=(modelMatrix*vec4(transformed,1.0)).xyz;');
     sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadPos; uniform float uHeadR; uniform float uHeadOn; uniform float uBoost; uniform vec3 uTint;\n' + sh.fragmentShader.replace(
       '#include <dithering_fragment>',
-      '#include <dithering_fragment>\n { float d=distance(vWPosM.xz,uHeadPos.xz); float inside=smoothstep(uHeadR,uHeadR*0.35,d)*uHeadOn; gl_FragColor.rgb*=mix(1.0,uBoost,inside); gl_FragColor.rgb+=uTint*inside; }');
+      '#include <dithering_fragment>\n { float d=distance(vWPosM.xz,uHeadPos.xz); float inside=smoothstep(uHeadR,uHeadR*0.35,d)*uHeadOn; vec3 lit=min(gl_FragColor.rgb*uBoost, vec3(0.45))+uTint; gl_FragColor.rgb=mix(gl_FragColor.rgb, lit, inside); }');
   };
   mat.needsUpdate = true;
 }
