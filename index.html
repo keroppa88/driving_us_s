@@ -539,8 +539,9 @@ function _isVeg(c){ return !!c && c.r < 0.78 && Math.max(c.g, c.b) > c.r + 0.06;
 // 【ヘッドライト=地面マスク方式】ライト円錐の内側は昼の明るさへ戻し黄色みを足す。
 // 外側は夜のまま(実ライト×kで暗い)。地面マテリアルのシェーダーに後付けする。
 const headMaskU = {
-  uHeadPos:{value:new THREE.Vector3()},  // 円錐中心(ワールド, 地面上)
-  uHeadR:{value:1.5},                     // 半径
+  uHeadL:{value:new THREE.Vector3()},     // 左ライト中心(ワールド, 地面上)
+  uHeadR2:{value:new THREE.Vector3()},    // 右ライト中心
+  uHeadR:{value:1.5},                     // 各円の半径
   uHeadOn:{value:0},                      // 0..1
   uBoost:{value:1},                       // 内側を昼へ戻す倍率(=1/k 目安)
   uTint:{value:new THREE.Color(0x4a3410)} // 内側に足す黄色み(加算)
@@ -549,14 +550,14 @@ function applyGroundMask(mat){
   if(!mat || mat._masked || mat.isShaderMaterial) return;
   mat._masked = true;
   mat.onBeforeCompile = (sh)=>{
-    sh.uniforms.uHeadPos=headMaskU.uHeadPos; sh.uniforms.uHeadR=headMaskU.uHeadR;
+    sh.uniforms.uHeadL=headMaskU.uHeadL; sh.uniforms.uHeadR2=headMaskU.uHeadR2; sh.uniforms.uHeadR=headMaskU.uHeadR;
     sh.uniforms.uHeadOn=headMaskU.uHeadOn; sh.uniforms.uBoost=headMaskU.uBoost; sh.uniforms.uTint=headMaskU.uTint;
     sh.vertexShader = 'varying vec3 vWPosM;\n' + sh.vertexShader.replace(
       '#include <begin_vertex>',
       '#include <begin_vertex>\n vWPosM=(modelMatrix*vec4(transformed,1.0)).xyz;');
-    sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadPos; uniform float uHeadR; uniform float uHeadOn; uniform float uBoost; uniform vec3 uTint;\n' + sh.fragmentShader.replace(
+    sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadL; uniform vec3 uHeadR2; uniform float uHeadR; uniform float uHeadOn; uniform float uBoost; uniform vec3 uTint;\n' + sh.fragmentShader.replace(
       '#include <dithering_fragment>',
-      '#include <dithering_fragment>\n { float d=distance(vWPosM.xz,uHeadPos.xz); float inside=smoothstep(uHeadR,uHeadR*0.35,d)*uHeadOn; vec3 lit=min(gl_FragColor.rgb*uBoost, vec3(0.45))+uTint; gl_FragColor.rgb=mix(gl_FragColor.rgb, lit, inside); }');
+      '#include <dithering_fragment>\n { float dL=distance(vWPosM.xz,uHeadL.xz); float dR=distance(vWPosM.xz,uHeadR2.xz); float inside=max(smoothstep(uHeadR,uHeadR*0.35,dL),smoothstep(uHeadR,uHeadR*0.35,dR))*uHeadOn; vec3 lit=min(gl_FragColor.rgb*uBoost, vec3(0.45))+uTint; gl_FragColor.rgb=mix(gl_FragColor.rgb, lit, inside); }');
   };
   mat.needsUpdate = true;
 }
@@ -2022,10 +2023,11 @@ function animate(){
       lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*EYE_HEIGHT*2);
       lt.target.position.y=EYE_HEIGHT*0.8; lt.target.updateMatrixWorld();
     }
-    // (2)地面マスク: 前方の照射エリア内のみ「昼の地表+黄色み」を表示。外は夜のまま。
-    const gThrow=EYE_HEIGHT*5.625;
-    headMaskU.uHeadPos.value.copy(camera.position).addScaledVector(_hFwd,gThrow*0.7); headMaskU.uHeadPos.value.y=0;
-    headMaskU.uHeadR.value = gThrow*1.1;
+    // (2)地面マスク: 左右2つの照射円を前方に置き重ねる(車の2灯)。内側のみ昼地表+黄色。
+    const gThrow=EYE_HEIGHT*5.625, gSide=EYE_HEIGHT*1.2;
+    headMaskU.uHeadL.value.copy(camera.position).addScaledVector(_hFwd,gThrow*0.95).addScaledVector(_hRt,-gSide); headMaskU.uHeadL.value.y=0;
+    headMaskU.uHeadR2.value.copy(camera.position).addScaledVector(_hFwd,gThrow*0.95).addScaledVector(_hRt, gSide); headMaskU.uHeadR2.value.y=0;
+    headMaskU.uHeadR.value = gThrow*0.6;
     headMaskU.uHeadOn.value = headOn;
     headMaskU.uBoost.value = Math.min(1/Math.max(k,0.06), 5);  // 内側を昼の明るさへ復元(上限5)
   } else {
