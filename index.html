@@ -543,7 +543,8 @@ function deGreenMap(mat){
   const d = id.data;
   for(let i=0;i<d.length;i+=4){
     const r=d[i], g=d[i+1], b=d[i+2];
-    if(g>r && g>b){ d[i+1]=Math.max(r,b); } // 緑支配画素の緑味を中和
+    const avg=(r+b)*0.5;
+    if(g>avg+5){ d[i+1]=avg; } // 緑が赤青平均を超える画素(オリーブ含む)を中和
   }
   ctx.putImageData(id,0,0);
   const nt = new THREE.CanvasTexture(cv);
@@ -1980,7 +1981,7 @@ function animate(){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
-    const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*3.75, spread=EYE_HEIGHT*2.3;
+    const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*5.625, spread=EYE_HEIGHT*2.3;
     const lit=5*headOn;
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
       lt.visible=true; lt.intensity=lit;
