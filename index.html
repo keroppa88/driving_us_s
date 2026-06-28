@@ -665,8 +665,7 @@ function makeHeadPool(){
   const geo=new THREE.PlaneGeometry(1,1); geo.rotateX(-Math.PI/2);   // lay flat in XZ
   const m=new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
     map:_headPoolTex, transparent:true, blending:THREE.AdditiveBlending,
-    depthWrite:false, depthTest:true, fog:false, opacity:0,
-    polygonOffset:true, polygonOffsetFactor:-4, polygonOffsetUnits:-4 })); // 地面とのZ-fight防止
+    depthWrite:false, depthTest:false, fog:false, opacity:0 })); // depthTest無効で地面とのZ-fightを根絶
   m.frustumCulled=false; m.visible=false; m.renderOrder=6; scene.add(m); return m;
 }
 const poolL = makeHeadPool(), poolR = makeHeadPool();
