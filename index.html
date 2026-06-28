@@ -528,20 +528,34 @@ function tuneTex(mat){
     }
   }
 }
-// 地面テクスチャに含まれる緑のまだら(緑線の正体)をGPUシェーダーで確実に中和。
-// テクスチャ抽出後のdiffuseで「緑が赤青平均を超える分」を平均まで抑える。
-// onBeforeCompileで毎フレーム処理するため、画像デコードの状況に依存しない。
+// 緑線の正体は「緑の単色マテリアル(草/苔系メッシュ)」と「テクスチャ内の緑画素」。
+// (1)マテリアル色そのものを直接中和(CPU・タイミング非依存で確実)。
+// (2)テクスチャ付きはonBeforeCompileでdiffuseの緑も抑える。
+function _deGreenColor(c){ const a=(c.r+c.b)*0.5; if(c.g>a) c.g=a; } // 緑が赤青平均超なら平均まで下げる
 function deGreenMap(mat){
-  if(!mat || mat._deGreened) return;
+  if(!mat) return;
+  if(mat.color) _deGreenColor(mat.color);          // 単色マテリアルの緑を中和
+  if(mat.map && !mat._deGreened){                   // テクスチャ付きはdiffuseの緑も抑える
+    mat.onBeforeCompile = (shader)=>{
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <map_fragment>',
+        '#include <map_fragment>\n {float _a=(diffuseColor.r+diffuseColor.b)*0.5; if(diffuseColor.g>_a) diffuseColor.g=_a;}'
+      );
+    };
+    mat.needsUpdate = true;
+  }
   mat._deGreened = true;
-  mat.onBeforeCompile = (shader)=>{
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <map_fragment>',
-      '#include <map_fragment>\n {float _a=(diffuseColor.r+diffuseColor.b)*0.5; if(diffuseColor.g>_a) diffuseColor.g=_a;}'
-    );
-  };
-  mat.needsUpdate = true;
 }
+// シーン全体を走査し、全マテリアル色とnightMatsの復元色(base)を中和する。
+// 車や後から読み込まれるモデルも拾うため遅延して複数回呼ぶ。
+function deGreenAll(){
+  scene.traverse(o=>{ if(!o.isMesh)return;
+    const ms=Array.isArray(o.material)?o.material:[o.material];
+    ms.forEach(m=>{ if(m){ deGreenMap(m); if(m.map) tuneTex(m); } });
+  });
+  for(let i=0;i<nightMats.length;i++) _deGreenColor(nightMats[i].base); // 夜の復元色も中和
+}
+[1500,3500,7000,12000].forEach(t=>setTimeout(deGreenAll,t));
 
 function onResize() {
   const W = wrapper.clientWidth, H = wrapper.clientHeight;
