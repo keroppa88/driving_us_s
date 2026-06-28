@@ -536,10 +536,35 @@ function tuneTex(mat){
 // 色を変えても残るため、該当メッシュ自体を非表示にする。
 // 判定: 緑または青緑が赤を上回る(r<0.78 かつ max(g,b) > r+0.06)。タン地面/道路/車/明色は対象外。
 function _isVeg(c){ return !!c && c.r < 0.78 && Math.max(c.g, c.b) > c.r + 0.06; }
+// 【ヘッドライト=地面マスク方式】ライト円錐の内側は昼の明るさへ戻し黄色みを足す。
+// 外側は夜のまま(実ライト×kで暗い)。地面マテリアルのシェーダーに後付けする。
+const headMaskU = {
+  uHeadPos:{value:new THREE.Vector3()},  // 円錐中心(ワールド, 地面上)
+  uHeadR:{value:1.5},                     // 半径
+  uHeadOn:{value:0},                      // 0..1
+  uBoost:{value:1},                       // 内側を昼へ戻す倍率(=1/k 目安)
+  uTint:{value:new THREE.Color(0x4a3410)} // 内側に足す黄色み(加算)
+};
+function applyGroundMask(mat){
+  if(!mat || mat._masked || mat.isShaderMaterial) return;
+  mat._masked = true;
+  mat.onBeforeCompile = (sh)=>{
+    sh.uniforms.uHeadPos=headMaskU.uHeadPos; sh.uniforms.uHeadR=headMaskU.uHeadR;
+    sh.uniforms.uHeadOn=headMaskU.uHeadOn; sh.uniforms.uBoost=headMaskU.uBoost; sh.uniforms.uTint=headMaskU.uTint;
+    sh.vertexShader = 'varying vec3 vWPosM;\n' + sh.vertexShader.replace(
+      '#include <begin_vertex>',
+      '#include <begin_vertex>\n vWPosM=(modelMatrix*vec4(transformed,1.0)).xyz;');
+    sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadPos; uniform float uHeadR; uniform float uHeadOn; uniform float uBoost; uniform vec3 uTint;\n' + sh.fragmentShader.replace(
+      '#include <dithering_fragment>',
+      '#include <dithering_fragment>\n { float d=distance(vWPosM.xz,uHeadPos.xz); float inside=smoothstep(uHeadR,uHeadR*0.35,d)*uHeadOn; gl_FragColor.rgb*=mix(1.0,uBoost,inside); gl_FragColor.rgb+=uTint*inside; }');
+  };
+  mat.needsUpdate = true;
+}
 function deGreenMap(mat){
   if(!mat) return;
   if(mat.metalness!==undefined) mat.metalness=0;   // 鏡面ちらつき抑制
   if(mat.roughness!==undefined) mat.roughness=1;
+  applyGroundMask(mat);                              // 地面: 照射エリア内のみ昼地表+黄色
   mat._deGreened = true;
 }
 // シーン全体を走査し、緑/ティール系の装飾メッシュを非表示にする。
@@ -680,34 +705,40 @@ sun.position.set(50, 100, 50);
 scene.add(sun);
 
 // Headlights: two forward-facing spot lights that switch on when it gets dark.
+// ヘッドライト: レイヤー2に置き、前方の立体物(対向車/電柱/壁=layer2)だけを照らす。
+// 地面(layer0のみ)は照らさないので、地面の斑点/皺が出ない。
+const HEAD_LAYER = 2;
 function makeHeadlight(){
-  const s = new THREE.SpotLight(0xffb060, 0, 0, 0.5, 0.7, 0); // 暖色アンバー, soft edge, decay 0
-  s.visible = false;
+  const s = new THREE.SpotLight(0xfff0c8, 0, 0, 0.6, 0.5, 1.0); // 暖色, 円錐角0.6
+  s.visible = false; s.layers.set(HEAD_LAYER);
   scene.add(s); scene.add(s.target);
   return s;
 }
 const headL = makeHeadlight(), headR = makeHeadlight();
 const _hFwd = new THREE.Vector3(), _hRt = new THREE.Vector3(), _hEul = new THREE.Euler(0,0,0,'YXZ');
-
-// 地面はライト非依存(unlit)でスポットライトが効かないため、前方の地面に
-// 「光だまり」を加算ブレンドで重ねて、暗い地面でも照射部を明るく(暖色)見せる。
-function makeHeadPoolTex(){
-  const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S;
-  const ctx=cv.getContext('2d');
-  const g=ctx.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
-  // 暖色アンバー寄り(緑成分を抑え緑モアレを目立たなくする)
-  g.addColorStop(0,'rgba(255,150,70,1)');
-  g.addColorStop(0.5,'rgba(255,140,60,0.45)');
-  g.addColorStop(1,'rgba(255,130,55,0)');
-  ctx.fillStyle=g; ctx.fillRect(0,0,S,S);
-  return new THREE.CanvasTexture(cv);
+// 背の高い/縦長の立体物(電柱・壁・標識・車など)だけをヘッドライト対象(layer2)にする。
+// 平たい地面・道路は対象外なので照らされず、地面の斑点/皺が出ない。
+function markLightable(mesh){
+  const g=mesh.geometry; if(!g) return;
+  if(!g.boundingBox) g.computeBoundingBox();
+  const bb=g.boundingBox; if(!bb) return;
+  const sx=bb.max.x-bb.min.x, sy=bb.max.y-bb.min.y, sz=bb.max.z-bb.min.z;
+  if(sy > 0.3*Math.max(sx,sz) || sy > 1.0) mesh.layers.enable(HEAD_LAYER); // 立体物のみ
 }
-const _headPoolTex = makeHeadPoolTex();
+
+// 【抜本変更】光だまりをテクスチャ画像→シェーダー計算の加算グラデに置換。
+// 画像だと浅角で引き伸ばされエイリアシングし、リング/破線状の斑点になっていた。
+// シェーダーでUV距離から滑らかな円形グラデを計算するので破線が原理的に出ない。
+// 加算ブレンドなので道路と地面の色の区別はそのまま保たれる。
 function makeHeadPool(){
   const geo=new THREE.PlaneGeometry(1,1); geo.rotateX(-Math.PI/2);   // lay flat in XZ
-  const m=new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-    map:_headPoolTex, transparent:true, blending:THREE.AdditiveBlending,
-    depthWrite:false, depthTest:true, fog:false, opacity:0 })); // Z-fightはlogarithmicDepthBufferで解消
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{ uColor:{value:new THREE.Color(0xffb060)}, uOpacity:{value:0} },
+    transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, depthTest:true,
+    vertexShader:'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader:'varying vec2 vUv; uniform vec3 uColor; uniform float uOpacity; void main(){ float d=length(vUv-0.5)*2.0; float a=smoothstep(1.0,0.0,d); a*=a; gl_FragColor=vec4(uColor*a*uOpacity, 1.0); }'
+  });
+  const m=new THREE.Mesh(geo, mat);
   m.frustumCulled=false; m.visible=false; m.renderOrder=6; scene.add(m); return m;
 }
 const poolL = makeHeadPool(), poolR = makeHeadPool();
@@ -1355,7 +1386,7 @@ const trafficCars=[
 ['car01.glb','car05.glb','car02.glb','car04.glb','car03.glb','car06.glb','car02.glb','car01.glb'].forEach((f,i)=>{
   new GLTFLoader().load(f+'?v='+Date.now(),gltf=>{
     const m=gltf.scene;
-    m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
+    m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false; c.layers.enable(HEAD_LAYER); // 車はヘッドライト対象
       const fix=mat=>{if(!mat)return;mat.transparent=false;mat.opacity=1;mat.depthWrite=true;mat.needsUpdate=true;};
       Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
     m.scale.set(.4,.4,.4);m.visible=false;scene.add(m);trafficCars[i].mesh=m;
@@ -1409,7 +1440,7 @@ function loadSpecialModel(file,px,py,pz){
       const m=gltf.scene;
       m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
         const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}if(_isVeg(mat.color)){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;tuneTex(mat);deGreenMap(mat);mat.needsUpdate=true;collectNightMat(mat);};
-        Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
+        Array.isArray(c.material)?c.material.forEach(fix):fix(c.material); markLightable(c);});
       m.scale.set(.4,.4,.4);m.position.set(px,py,pz);m.visible=false;scene.add(m);
       const mc=m.clone();mc.position.set(px,py,pz-LOOP_LENGTH);mc.visible=false;scene.add(mc);
       resolve({main:m,copy:mc});
@@ -1421,7 +1452,7 @@ new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
   const model=gltf.scene;
   model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
     const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}if(_isVeg(m.color)){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;tuneTex(m);deGreenMap(m);m.needsUpdate=true;collectNightMat(m);};
-    Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
+    Array.isArray(c.material)?c.material.forEach(fix):fix(c.material); markLightable(c);});
   model.scale.set(.4,.4,.4); model.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(model), cen=box.getCenter(new THREE.Vector3());
   model.position.set(-cen.x,0,-cen.z); scene.add(model); model.updateMatrixWorld(true);
@@ -1958,8 +1989,8 @@ function animate(){
   const gd=_grdTmp.copy(GROUND_FOG_COLOR).multiplyScalar(kg);
   scene.fog.color.lerp(gd,sp);
   extDesertPlane.material.color.copy(gd);
-  // 地面GLBの色を直接×kgで暗くする(夜は道路/砂漠が判別不能に)。
-  for(let i=0;i<nightMats.length;i++){ nightMats[i].mat.color.copy(nightMats[i].base).multiplyScalar(kg); }
+  // 地面GLBの暗転は実ライト(ambient/sun ×k)が担当。per-material色darkenは廃止
+  // (ライト円錐マスクが内側のみ昼へ復元するため、地面色は素のままにしておく)。
   // ヘッドライト: 手動ONなら常時点灯、それ以外は暗いとき(b≲0.10)自動点灯。
   // 明暗スライダーに応じて自動点灯＆フェード。
   // 明暗0で全開、下から30%でゼロ、それ以上は照明オン無効(白飛び防止)。
@@ -1975,26 +2006,30 @@ function animate(){
   _autoLightPrev = _atMin ? 1 : 0;
   // 点灯はユーザー意思(lightManualOn)で決定。強度は明暗フェード(30%超は0=白飛び防止)。
   const headOn = lightManualOn ? lightFade : 0;
+  headL.visible=false; headR.visible=false;
+  poolL.visible=false; poolR.visible=false;
   if(headOn>0){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
-    const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*5.625, spread=EYE_HEIGHT*2.3;
-    // スポットライトは地面(MeshStandard)の低ポリ面を浅角で照らし、カメラ追従の
-    // 皺/縦線パターン(画面固定)を生むため無効化。照射表現は加算の光だまりのみで行う。
-    headL.visible=false; headR.visible=false;
-    // 地面の光だまり(加算): 照射部を明るく見せる(スポット非使用)。
-    for(const [pool,sgn] of [[poolL,-1],[poolR,1]]){
-      pool.visible=true; pool.material.opacity=Math.min(1,headOn*0.28);
-      pool.position.copy(camera.position).addScaledVector(_hFwd,throwD*1.1).addScaledVector(_hRt,sgn*spread*0.5);
-      pool.position.y=0.06;
-      pool.rotation.y=eff;
-    // 横幅・高さ・奥行(前方=中〜遠のみ照らし、手前の地面は照らさない)
-      pool.scale.set(spread*1.8,2, throwD*1.4);
+    const spacing=EYE_HEIGHT*0.5, throwD=EYE_HEIGHT*30;
+    const lit=22*headOn;
+    // (1)前方の立体物(対向車/電柱/壁=layer2)のみを照らす実スポットライト。地面は不照射。
+    for(const [lt,sgn] of [[headL,-1],[headR,1]]){
+      lt.visible=true; lt.intensity=lit; lt.distance=throwD*1.4; lt.angle=0.6; lt.penumbra=0.5;
+      lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
+      lt.position.y=EYE_HEIGHT*0.8;
+      lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*EYE_HEIGHT*2);
+      lt.target.position.y=EYE_HEIGHT*0.8; lt.target.updateMatrixWorld();
     }
+    // (2)地面マスク: 前方の照射エリア内のみ「昼の地表+黄色み」を表示。外は夜のまま。
+    const gThrow=EYE_HEIGHT*5.625;
+    headMaskU.uHeadPos.value.copy(camera.position).addScaledVector(_hFwd,gThrow*0.7); headMaskU.uHeadPos.value.y=0;
+    headMaskU.uHeadR.value = gThrow*1.1;
+    headMaskU.uHeadOn.value = headOn;
+    headMaskU.uBoost.value = Math.min(1/Math.max(k,0.06), 5);  // 内側を昼の明るさへ復元(上限5)
   } else {
-    headL.visible=headR.visible=false;
-    poolL.visible=poolR.visible=false;
+    headMaskU.uHeadOn.value = 0;
   }
 
   if(colorHudOn){
