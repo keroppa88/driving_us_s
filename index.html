@@ -531,32 +531,26 @@ function tuneTex(mat){
 // 緑線の正体は「緑の単色マテリアル(草/苔系メッシュ)」と「テクスチャ内の緑画素」。
 // (1)マテリアル色そのものを直接中和(CPU・タイミング非依存で確実)。
 // (2)テクスチャ付きはonBeforeCompileでdiffuseの緑も抑える。
-function _deGreenColor(c){ const a=(c.r+c.b)*0.5; if(c.g>a) c.g=a; } // 緑が赤青平均超なら平均まで下げる
+// 斑点/縦線の正体は、取り込んだGLB内に含まれる緑・ティール系の装飾メッシュ
+// (Neon_Leaf/Jade/Moss/teal等、3Dツールが自動命名した草・苔・小オブジェクト)。
+// 色を変えても残るため、該当メッシュ自体を非表示にする。
+// 判定: 緑または青緑が赤を上回る(r<0.78 かつ max(g,b) > r+0.06)。タン地面/道路/車/明色は対象外。
+function _isVeg(c){ return !!c && c.r < 0.78 && Math.max(c.g, c.b) > c.r + 0.06; }
 function deGreenMap(mat){
   if(!mat) return;
-  if(mat.color) _deGreenColor(mat.color);          // 単色マテリアルの緑を中和
-  // 金属質の鏡面ハイライト(視点依存)は暗転時に皺/縦線として浮き出るため消す。
-  if(mat.metalness!==undefined) mat.metalness=0;
+  if(mat.metalness!==undefined) mat.metalness=0;   // 鏡面ちらつき抑制
   if(mat.roughness!==undefined) mat.roughness=1;
-  if(mat.map && !mat._deGreened){                   // テクスチャ付きはdiffuseの緑も抑える
-    mat.onBeforeCompile = (shader)=>{
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <map_fragment>',
-        '#include <map_fragment>\n {float _a=(diffuseColor.r+diffuseColor.b)*0.5; if(diffuseColor.g>_a) diffuseColor.g=_a;}'
-      );
-    };
-    mat.needsUpdate = true;
-  }
   mat._deGreened = true;
 }
-// シーン全体を走査し、全マテリアル色とnightMatsの復元色(base)を中和する。
+// シーン全体を走査し、緑/ティール系の装飾メッシュを非表示にする。
 // 車や後から読み込まれるモデルも拾うため遅延して複数回呼ぶ。
 function deGreenAll(){
   scene.traverse(o=>{ if(!o.isMesh)return;
     const ms=Array.isArray(o.material)?o.material:[o.material];
-    ms.forEach(m=>{ if(m){ deGreenMap(m); if(m.map) tuneTex(m); } });
+    let veg=false;
+    ms.forEach(m=>{ if(m){ if(_isVeg(m.color)) veg=true; deGreenMap(m); } });
+    if(veg) o.visible=false;                         // 装飾の草/苔/小オブジェクトを消す
   });
-  for(let i=0;i<nightMats.length;i++) _deGreenColor(nightMats[i].base); // 夜の復元色も中和
 }
 [1500,3500,7000,12000].forEach(t=>setTimeout(deGreenAll,t));
 
@@ -1414,7 +1408,7 @@ function loadSpecialModel(file,px,py,pz){
     new GLTFLoader().load(file+'?v='+Date.now(),gltf=>{
       const m=gltf.scene;
       m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;tuneTex(mat);deGreenMap(mat);mat.needsUpdate=true;collectNightMat(mat);};
+        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}if(_isVeg(mat.color)){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;tuneTex(mat);deGreenMap(mat);mat.needsUpdate=true;collectNightMat(mat);};
         Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
       m.scale.set(.4,.4,.4);m.position.set(px,py,pz);m.visible=false;scene.add(m);
       const mc=m.clone();mc.position.set(px,py,pz-LOOP_LENGTH);mc.visible=false;scene.add(mc);
@@ -1426,7 +1420,7 @@ function loadSpecialModel(file,px,py,pz){
 new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
   const model=gltf.scene;
   model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;tuneTex(m);deGreenMap(m);m.needsUpdate=true;collectNightMat(m);};
+    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}if(_isVeg(m.color)){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;tuneTex(m);deGreenMap(m);m.needsUpdate=true;collectNightMat(m);};
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
   model.scale.set(.4,.4,.4); model.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(model), cen=box.getCenter(new THREE.Vector3());
@@ -1964,7 +1958,7 @@ function animate(){
   const gd=_grdTmp.copy(GROUND_FOG_COLOR).multiplyScalar(kg);
   scene.fog.color.lerp(gd,sp);
   extDesertPlane.material.color.copy(gd);
-  // 地面GLB(ライト非依存)の色を直接×kgで暗くする(夜は道路/砂漠が判別不能に)。
+  // 地面GLBの色を直接×kgで暗くする(夜は道路/砂漠が判別不能に)。
   for(let i=0;i<nightMats.length;i++){ nightMats[i].mat.color.copy(nightMats[i].base).multiplyScalar(kg); }
   // ヘッドライト: 手動ONなら常時点灯、それ以外は暗いとき(b≲0.10)自動点灯。
   // 明暗スライダーに応じて自動点灯＆フェード。
