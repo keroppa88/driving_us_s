@@ -509,25 +509,9 @@ const SAMEDIR_EXIT_DIST    = CAR_SPAWN_OFFSET_ABS + LOOP_LENGTH / 2;
 // ─────────────────────────────────────────────
 //  RENDERER
 // ─────────────────────────────────────────────
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true }); // 深度精度UP(スマホ16bitのZ-fightモアレ=緑筋を防ぐ)
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-
-// 浅い角度の地面テクスチャで出る色モアレ(緑筋)対策: 異方性フィルタ＋ミップマップ。
-const MAX_ANISO = renderer.capabilities.getMaxAnisotropy();
-function tuneTex(mat){
-  if(!mat) return;
-  for(const key of ['map','roughnessMap','metalnessMap','normalMap','emissiveMap','aoMap']){
-    const t = mat[key];
-    if(t){
-      t.anisotropy = MAX_ANISO;
-      t.minFilter = THREE.LinearMipmapLinearFilter;
-      t.magFilter = THREE.LinearFilter;
-      t.generateMipmaps = true;
-      t.needsUpdate = true;
-    }
-  }
-}
 
 function onResize() {
   const W = wrapper.clientWidth, H = wrapper.clientHeight;
@@ -656,7 +640,7 @@ scene.add(sun);
 
 // Headlights: two forward-facing spot lights that switch on when it gets dark.
 function makeHeadlight(){
-  const s = new THREE.SpotLight(0xffd58a, 0, 0, 0.5, 0.7, 0); // 暖色, soft edge, decay 0
+  const s = new THREE.SpotLight(0xffb060, 0, 0, 0.5, 0.7, 0); // 暖色アンバー, soft edge, decay 0
   s.visible = false;
   scene.add(s); scene.add(s.target);
   return s;
@@ -670,9 +654,10 @@ function makeHeadPoolTex(){
   const S=128, cv=document.createElement('canvas'); cv.width=cv.height=S;
   const ctx=cv.getContext('2d');
   const g=ctx.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);
-  g.addColorStop(0,'rgba(255,213,138,1)');
-  g.addColorStop(0.5,'rgba(255,200,120,0.45)');
-  g.addColorStop(1,'rgba(255,190,110,0)');
+  // 暖色アンバー寄り(緑成分を抑え緑モアレを目立たなくする)
+  g.addColorStop(0,'rgba(255,150,70,1)');
+  g.addColorStop(0.5,'rgba(255,140,60,0.45)');
+  g.addColorStop(1,'rgba(255,130,55,0)');
   ctx.fillStyle=g; ctx.fillRect(0,0,S,S);
   return new THREE.CanvasTexture(cv);
 }
@@ -1382,7 +1367,7 @@ function loadSpecialModel(file,px,py,pz){
     new GLTFLoader().load(file+'?v='+Date.now(),gltf=>{
       const m=gltf.scene;
       m.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;tuneTex(mat);mat.needsUpdate=true;collectNightMat(mat);};
+        const fix=mat=>{if(!mat)return;if(mat.color&&mat.color.r>.6&&mat.color.g<.35&&mat.color.b>.5){c.visible=false;return;}mat.transparent=false;mat.opacity=1;mat.depthWrite=true;mat.needsUpdate=true;collectNightMat(mat);};
         Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
       m.scale.set(.4,.4,.4);m.position.set(px,py,pz);m.visible=false;scene.add(m);
       const mc=m.clone();mc.position.set(px,py,pz-LOOP_LENGTH);mc.visible=false;scene.add(mc);
@@ -1394,7 +1379,7 @@ function loadSpecialModel(file,px,py,pz){
 new GLTFLoader().load('sa01.glb?v='+Date.now(), gltf=>{
   const model=gltf.scene;
   model.traverse(c=>{if(!c.isMesh)return;c.frustumCulled=false;
-    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;tuneTex(m);m.needsUpdate=true;collectNightMat(m);};
+    const fix=m=>{if(!m)return;if(m.color&&m.color.r>.6&&m.color.g<.35&&m.color.b>.5){c.visible=false;return;}m.transparent=false;m.opacity=1;m.depthWrite=true;m.needsUpdate=true;collectNightMat(m);};
     Array.isArray(c.material)?c.material.forEach(fix):fix(c.material);});
   model.scale.set(.4,.4,.4); model.updateMatrixWorld(true);
   const box=new THREE.Box3().setFromObject(model), cen=box.getCenter(new THREE.Vector3());
@@ -1954,7 +1939,7 @@ function animate(){
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
     const spacing=EYE_HEIGHT*0.45, throwD=EYE_HEIGHT*7.5, spread=EYE_HEIGHT*2.3;
-    const lit=13.6*headOn;
+    const lit=9*headOn;
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
       lt.visible=true; lt.intensity=lit;
       lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
@@ -1964,7 +1949,7 @@ function animate(){
     }
     // 地面の光だまり(加算): 暗いunlit地面でも照射部を明るく見せる。
     for(const [pool,sgn] of [[poolL,-1],[poolR,1]]){
-      pool.visible=true; pool.material.opacity=Math.min(1,headOn*0.864);
+      pool.visible=true; pool.material.opacity=Math.min(1,headOn*0.55);
       pool.position.copy(camera.position).addScaledVector(_hFwd,throwD*0.55).addScaledVector(_hRt,sgn*spread*0.5);
       pool.position.y=0.06;
       pool.rotation.y=eff;
