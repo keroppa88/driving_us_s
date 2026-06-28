@@ -538,26 +538,30 @@ function tuneTex(mat){
 function _isVeg(c){ return !!c && c.r < 0.78 && Math.max(c.g, c.b) > c.r + 0.06; }
 // 【ヘッドライト=地面マスク方式】ライト円錐の内側は昼の明るさへ戻し黄色みを足す。
 // 外側は夜のまま(実ライト×kで暗い)。地面マテリアルのシェーダーに後付けする。
+// 地面の明るさをアルベド(素の地表色)基準でシェーダー制御する(実ライトの陰影/鏡面を
+// 使わないので斑点・皺が出ない)。外側=アルベド×夜係数、内側(2灯)=アルベド×昼やや暗め+黄色。
 const headMaskU = {
   uHeadL:{value:new THREE.Vector3()},     // 左ライト中心(ワールド, 地面上)
   uHeadR2:{value:new THREE.Vector3()},    // 右ライト中心
   uHeadR:{value:1.5},                     // 各円の半径
-  uHeadOn:{value:0},                      // 0..1
-  uBoost:{value:1},                       // 内側を昼へ戻す倍率(=1/k 目安)
-  uTint:{value:new THREE.Color(0x4a3410)} // 内側に足す黄色み(加算)
+  uHeadOn:{value:0},                      // 0..1(ライト点灯度)
+  uNight:{value:1.0},                     // 外側の明るさ係数(昼=1, 夜=暗)
+  uDay:{value:0.85},                      // 内側(照射部)の明るさ係数
+  uTint:{value:new THREE.Color(0x3a2a0c)} // 内側に足す黄色み
 };
 function applyGroundMask(mat){
   if(!mat || mat._masked || mat.isShaderMaterial) return;
   mat._masked = true;
   mat.onBeforeCompile = (sh)=>{
     sh.uniforms.uHeadL=headMaskU.uHeadL; sh.uniforms.uHeadR2=headMaskU.uHeadR2; sh.uniforms.uHeadR=headMaskU.uHeadR;
-    sh.uniforms.uHeadOn=headMaskU.uHeadOn; sh.uniforms.uBoost=headMaskU.uBoost; sh.uniforms.uTint=headMaskU.uTint;
+    sh.uniforms.uHeadOn=headMaskU.uHeadOn; sh.uniforms.uNight=headMaskU.uNight; sh.uniforms.uDay=headMaskU.uDay; sh.uniforms.uTint=headMaskU.uTint;
     sh.vertexShader = 'varying vec3 vWPosM;\n' + sh.vertexShader.replace(
       '#include <begin_vertex>',
       '#include <begin_vertex>\n vWPosM=(modelMatrix*vec4(transformed,1.0)).xyz;');
-    sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadL; uniform vec3 uHeadR2; uniform float uHeadR; uniform float uHeadOn; uniform float uBoost; uniform vec3 uTint;\n' + sh.fragmentShader.replace(
-      '#include <dithering_fragment>',
-      '#include <dithering_fragment>\n { float dL=distance(vWPosM.xz,uHeadL.xz); float dR=distance(vWPosM.xz,uHeadR2.xz); float inside=max(smoothstep(uHeadR,uHeadR*0.35,dL),smoothstep(uHeadR,uHeadR*0.35,dR))*uHeadOn; vec3 lit=min(gl_FragColor.rgb*uBoost, vec3(0.45))+uTint; gl_FragColor.rgb=mix(gl_FragColor.rgb, lit, inside); }');
+    sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadL; uniform vec3 uHeadR2; uniform float uHeadR; uniform float uHeadOn; uniform float uNight; uniform float uDay; uniform vec3 uTint;\n' + sh.fragmentShader
+      .replace('#include <map_fragment>','#include <map_fragment>\n vec3 gAlbedoM=diffuseColor.rgb;')
+      .replace('#include <dithering_fragment>',
+        '#include <dithering_fragment>\n { float dL=distance(vWPosM.xz,uHeadL.xz); float dR=distance(vWPosM.xz,uHeadR2.xz); float inside=max(smoothstep(uHeadR,uHeadR*0.35,dL),smoothstep(uHeadR,uHeadR*0.35,dR))*uHeadOn*0.7; vec3 nightCol=gAlbedoM*uNight; vec3 litCol=gAlbedoM*uDay+uTint; gl_FragColor.rgb=mix(nightCol, litCol, inside); }');
   };
   mat.needsUpdate = true;
 }
@@ -2029,10 +2033,10 @@ function animate(){
     headMaskU.uHeadR2.value.copy(camera.position).addScaledVector(_hFwd,gThrow*0.95).addScaledVector(_hRt, gSide); headMaskU.uHeadR2.value.y=0;
     headMaskU.uHeadR.value = gThrow*0.6;
     headMaskU.uHeadOn.value = headOn;
-    headMaskU.uBoost.value = Math.min(1/Math.max(k,0.06), 5);  // 内側を昼の明るさへ復元(上限5)
   } else {
     headMaskU.uHeadOn.value = 0;
   }
+  headMaskU.uNight.value = kg;  // 外側地面の明るさ(昼=1, 夜=暗)。常に更新
 
   if(colorHudOn){
     // 遷移途中ではなく最終目標色を表示(途中の値は僅かに暗くズレるため)。
