@@ -543,7 +543,9 @@ function _isVeg(c){ return !!c && c.r < 0.78 && Math.max(c.g, c.b) > c.r + 0.06;
 const headMaskU = {
   uHeadL:{value:new THREE.Vector3()},     // 左ライト中心(ワールド, 地面上)
   uHeadR2:{value:new THREE.Vector3()},    // 右ライト中心
-  uHeadR:{value:1.5},                     // 各円の半径
+  uHeadFwd:{value:new THREE.Vector2(0,-1)},// 進行方向(xz)
+  uHeadW:{value:1.0},                     // 楕円の横半径(狭い)
+  uHeadLen:{value:3.0},                   // 楕円の奥行半径(長い)
   uHeadOn:{value:0},                      // 0..1(ライト点灯度)
   uNight:{value:1.0},                     // 外側の明るさ係数(昼=1, 夜=暗)
   uDay:{value:0.85},                      // 内側(照射部)の明るさ係数
@@ -553,15 +555,15 @@ function applyGroundMask(mat){
   if(!mat || mat._masked || mat.isShaderMaterial) return;
   mat._masked = true;
   mat.onBeforeCompile = (sh)=>{
-    sh.uniforms.uHeadL=headMaskU.uHeadL; sh.uniforms.uHeadR2=headMaskU.uHeadR2; sh.uniforms.uHeadR=headMaskU.uHeadR;
+    sh.uniforms.uHeadL=headMaskU.uHeadL; sh.uniforms.uHeadR2=headMaskU.uHeadR2; sh.uniforms.uHeadFwd=headMaskU.uHeadFwd; sh.uniforms.uHeadW=headMaskU.uHeadW; sh.uniforms.uHeadLen=headMaskU.uHeadLen;
     sh.uniforms.uHeadOn=headMaskU.uHeadOn; sh.uniforms.uNight=headMaskU.uNight; sh.uniforms.uDay=headMaskU.uDay; sh.uniforms.uTint=headMaskU.uTint;
     sh.vertexShader = 'varying vec3 vWPosM;\n' + sh.vertexShader.replace(
       '#include <begin_vertex>',
       '#include <begin_vertex>\n vWPosM=(modelMatrix*vec4(transformed,1.0)).xyz;');
-    sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadL; uniform vec3 uHeadR2; uniform float uHeadR; uniform float uHeadOn; uniform float uNight; uniform float uDay; uniform vec3 uTint;\n' + sh.fragmentShader
+    sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadL; uniform vec3 uHeadR2; uniform vec2 uHeadFwd; uniform float uHeadW; uniform float uHeadLen; uniform float uHeadOn; uniform float uNight; uniform float uDay; uniform vec3 uTint;\n' + sh.fragmentShader
       .replace('#include <map_fragment>','#include <map_fragment>\n vec3 gAlbedoM=diffuseColor.rgb;')
       .replace('#include <dithering_fragment>',
-        '#include <dithering_fragment>\n { float dL=distance(vWPosM.xz,uHeadL.xz); float dR=distance(vWPosM.xz,uHeadR2.xz); float inside=max(smoothstep(uHeadR,uHeadR*0.35,dL),smoothstep(uHeadR,uHeadR*0.35,dR))*uHeadOn*0.7; vec3 nightCol=gAlbedoM*uNight; vec3 litCol=gAlbedoM*uDay+uTint; gl_FragColor.rgb=mix(nightCol, litCol, inside); }');
+        '#include <dithering_fragment>\n { vec2 fw=normalize(uHeadFwd); vec2 pp=vec2(-fw.y,fw.x); vec2 rL=vWPosM.xz-uHeadL.xz; float dL=length(vec2(dot(rL,pp)/uHeadW, dot(rL,fw)/uHeadLen)); vec2 rR=vWPosM.xz-uHeadR2.xz; float dR=length(vec2(dot(rR,pp)/uHeadW, dot(rR,fw)/uHeadLen)); float inside=max(smoothstep(1.0,0.4,dL),smoothstep(1.0,0.4,dR))*uHeadOn*0.7; vec3 nightCol=gAlbedoM*uNight; vec3 litCol=gAlbedoM*uDay+uTint; gl_FragColor.rgb=mix(nightCol, litCol, inside); }');
   };
   mat.needsUpdate = true;
 }
@@ -2027,11 +2029,13 @@ function animate(){
       lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*EYE_HEIGHT*2);
       lt.target.position.y=EYE_HEIGHT*0.8; lt.target.updateMatrixWorld();
     }
-    // (2)地面マスク: 左右2つの照射円を前方に置き重ねる(車の2灯)。奥行き1.5倍＋手前へ拡大。
-    const gThrow=EYE_HEIGHT*5.625, gSide=EYE_HEIGHT*1.2;
-    headMaskU.uHeadL.value.copy(camera.position).addScaledVector(_hFwd,gThrow*0.85).addScaledVector(_hRt,-gSide); headMaskU.uHeadL.value.y=0;
-    headMaskU.uHeadR2.value.copy(camera.position).addScaledVector(_hFwd,gThrow*0.85).addScaledVector(_hRt, gSide); headMaskU.uHeadR2.value.y=0;
-    headMaskU.uHeadR.value = gThrow*0.9;
+    // (2)地面マスク: 左右2つの楕円(前方に細長く)を中央で重ねる(車の2灯)。横狭く・奥は遠くまで。
+    const gThrow=EYE_HEIGHT*5.625, gSide=EYE_HEIGHT*1.0;
+    headMaskU.uHeadL.value.copy(camera.position).addScaledVector(_hFwd,gThrow*1.4).addScaledVector(_hRt,-gSide); headMaskU.uHeadL.value.y=0;
+    headMaskU.uHeadR2.value.copy(camera.position).addScaledVector(_hFwd,gThrow*1.4).addScaledVector(_hRt, gSide); headMaskU.uHeadR2.value.y=0;
+    headMaskU.uHeadFwd.value.set(_hFwd.x,_hFwd.z);
+    headMaskU.uHeadW.value = gThrow*0.5;    // 横幅(狭い)
+    headMaskU.uHeadLen.value = gThrow*1.9;  // 奥行(遠くまで・約2倍)
     headMaskU.uHeadOn.value = headOn;
   } else {
     headMaskU.uHeadOn.value = 0;
