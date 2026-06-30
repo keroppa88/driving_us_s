@@ -563,7 +563,7 @@ function applyGroundMask(mat){
     sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadL; uniform vec3 uHeadR2; uniform vec2 uHeadFwd; uniform float uHeadW; uniform float uHeadLen; uniform float uHeadOn; uniform float uNight; uniform float uDay; uniform vec3 uTint;\n' + sh.fragmentShader
       .replace('#include <map_fragment>','#include <map_fragment>\n vec3 gAlbedoM=diffuseColor.rgb;')
       .replace('#include <dithering_fragment>',
-        '#include <dithering_fragment>\n { vec2 fw=normalize(uHeadFwd); vec2 pp=vec2(-fw.y,fw.x); vec2 rL=vWPosM.xz-uHeadL.xz; float dL=length(vec2(dot(rL,pp)/uHeadW, dot(rL,fw)/uHeadLen)); vec2 rR=vWPosM.xz-uHeadR2.xz; float dR=length(vec2(dot(rR,pp)/uHeadW, dot(rR,fw)/uHeadLen)); float inside=max(smoothstep(1.0,0.1,dL),smoothstep(1.0,0.1,dR))*uHeadOn*0.7; vec3 nightCol=gAlbedoM*uNight; vec3 litCol=gAlbedoM*uDay+uTint; gl_FragColor.rgb=mix(nightCol, litCol, inside); }');
+        '#include <dithering_fragment>\n { vec2 fw=normalize(uHeadFwd); vec2 pp=vec2(-fw.y,fw.x); vec2 rL=vWPosM.xz-uHeadL.xz; float dL=length(vec2(dot(rL,pp)/uHeadW, dot(rL,fw)/uHeadLen)); vec2 rR=vWPosM.xz-uHeadR2.xz; float dR=length(vec2(dot(rR,pp)/uHeadW, dot(rR,fw)/uHeadLen)); float inside=max(smoothstep(1.0,0.1,dL),smoothstep(1.0,0.1,dR))*uHeadOn*0.7; vec3 nightCol=gl_FragColor.rgb*uNight; vec3 litCol=gAlbedoM*uDay+uTint; gl_FragColor.rgb=mix(nightCol, litCol, inside); }');
   };
   mat.needsUpdate = true;
 }
@@ -1999,18 +1999,17 @@ function animate(){
   // 地面GLBの暗転は実ライト(ambient/sun ×k)が担当。per-material色darkenは廃止
   // (ライト円錐マスクが内側のみ昼へ復元するため、地面色は素のままにしておく)。
   // ヘッドライト: 手動ONなら常時点灯、それ以外は暗いとき(b≲0.10)自動点灯。
-  // 明暗スライダーに応じて自動点灯＆フェード。
-  // 明暗0で全開、下から30%でゼロ、それ以上は照明オン無効(白飛び防止)。
+  // 空色・地平線色が最大の25%以下になったらライト発動。25%でゼロ→暗いほど全開。
   const _bvN = Math.max(0,Math.min(1,(Math.max(skyL,horizL)-0.1)/0.88));
-  const lightFade = _bvN >= 0.30 ? 0 : (1 - _bvN/0.30);
-  // 明暗が最低値になった瞬間に自動点灯＋色調/彩度を一度だけ補正。
+  const lightFade = _bvN >= 0.25 ? 0 : (1 - _bvN/0.25);
+  // 25%以下に入った瞬間に自動点灯＋色調/彩度を一度だけ補正。
   // 以後はユーザーがボタンでON/OFF自由(再点灯も可)。それ以外の明暗でも手動ON/OFF可。
-  const _atMin = _bvN <= 0.001;
-  if(_atMin && _autoLightPrev===0){
+  const _below = _bvN <= 0.25;
+  if(_below && _autoLightPrev===0){
     lightManualOn = true; btnLight.classList.add('active');
     applyAutoLightColorFix();
   }
-  _autoLightPrev = _atMin ? 1 : 0;
+  _autoLightPrev = _below ? 1 : 0;
   // 点灯はユーザー意思(lightManualOn)で決定。強度は明暗フェード(30%超は0=白飛び防止)。
   const headOn = lightManualOn ? lightFade : 0;
   headL.visible=false; headR.visible=false;
