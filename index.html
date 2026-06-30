@@ -2019,10 +2019,10 @@ function animate(){
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
     const spacing=EYE_HEIGHT*0.5, throwD=EYE_HEIGHT*30;
-    const lit=48*headOn;   // 威力UP: 中距離の物まで照らす
+    const lit=96*headOn;   // 前方立体物への照射を2倍
     // (1)前方の立体物(対向車/電柱/壁=layer2)のみを照らす実スポットライト。地面は不照射。
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
-      lt.visible=true; lt.intensity=lit; lt.distance=throwD*2.6; lt.angle=0.65; lt.penumbra=0.5;
+      lt.visible=true; lt.intensity=lit; lt.distance=throwD*5.2; lt.angle=0.65; lt.penumbra=0.5;
       lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
       lt.position.y=EYE_HEIGHT*0.8;
       lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*EYE_HEIGHT*2);
