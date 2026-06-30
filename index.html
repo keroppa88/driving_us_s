@@ -2033,13 +2033,13 @@ function animate(){
       lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*EYE_HEIGHT*2);
       lt.target.position.y=EYE_HEIGHT*0.8; lt.target.updateMatrixWorld();
     }
-    // (2)地面マスク: 左右2つの楕円(前方に細長く)を中央で重ねる(車の2灯)。横狭く・奥は遠くまで。
+    // (2)地面マスク: 左右2つの楕円(前方に細長く)を中央で重ねる(車の2灯)。地平線方向まで延長。
     const gThrow=EYE_HEIGHT*5.625, gSide=EYE_HEIGHT*1.0;
-    headMaskU.uHeadL.value.copy(camera.position).addScaledVector(_hFwd,gThrow*1.4).addScaledVector(_hRt,-gSide); headMaskU.uHeadL.value.y=0;
-    headMaskU.uHeadR2.value.copy(camera.position).addScaledVector(_hFwd,gThrow*1.4).addScaledVector(_hRt, gSide); headMaskU.uHeadR2.value.y=0;
+    headMaskU.uHeadL.value.copy(camera.position).addScaledVector(_hFwd,gThrow*3.2).addScaledVector(_hRt,-gSide); headMaskU.uHeadL.value.y=0;
+    headMaskU.uHeadR2.value.copy(camera.position).addScaledVector(_hFwd,gThrow*3.2).addScaledVector(_hRt, gSide); headMaskU.uHeadR2.value.y=0;
     headMaskU.uHeadFwd.value.set(_hFwd.x,_hFwd.z);
     headMaskU.uHeadW.value = gThrow*0.5;    // 横幅(狭い)
-    headMaskU.uHeadLen.value = gThrow*1.9;  // 奥行(遠くまで・約2倍)
+    headMaskU.uHeadLen.value = gThrow*4.5;  // 奥行(地平線方向まで延長)
     headMaskU.uHeadOn.value = headOn;
   } else {
     headMaskU.uHeadOn.value = 0;
