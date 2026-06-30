@@ -1562,10 +1562,14 @@ skySatSlider.addEventListener('input', e => {
   applySkySliders();
 });
 skyBrightSlider.addEventListener('input', e => {
+  // 明暗は上空・地平線の両方に同時適用(色調・彩度はモード別のまま)。
+  // 片方だけ暗くしても全体が暗くならずライトが点かない問題を解消。
   const v = 0.1 + e.target.value / 100 * 0.88;
-  if (skySliderMode === 0) { skyL = v; }
-  else { horizL = v; }
-  applySkySliders();
+  skyL = v; horizL = v;
+  skyTopTarget.setHSL(skyH, skyS, skyL);
+  skyHorizTarget = new THREE.Color().setHSL(horizH, horizS, horizL);
+  skyHorizBandTarget.copy(skyHorizTarget);
+  skyIsBlack = false;
 });
 
 let touchIsDrag=false, lastTapTime=0;
