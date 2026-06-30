@@ -2027,7 +2027,7 @@ function animate(){
     // (1)前方の立体物(対向車/電柱/壁=layer2)のみを照らす実スポットライト。地面は不照射。
     // decay=0で距離減衰なし＝地表照射エリアより遠い立体物も照らす。
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
-      lt.visible=true; lt.intensity=lit; lt.decay=0; lt.distance=throwD*9; lt.angle=0.6; lt.penumbra=0.5;
+      lt.visible=true; lt.intensity=lit; lt.decay=0; lt.distance=0; lt.angle=0.6; lt.penumbra=0.5; // distance=0=無限(減衰なし)
       lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
       lt.position.y=EYE_HEIGHT*0.8;
       lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*EYE_HEIGHT*2);
