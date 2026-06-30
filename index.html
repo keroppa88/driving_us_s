@@ -548,7 +548,7 @@ const headMaskU = {
   uHeadLen:{value:3.0},                   // 楕円の奥行半径(長い)
   uHeadOn:{value:0},                      // 0..1(ライト点灯度)
   uNight:{value:1.0},                     // 外側の明るさ係数(昼=1, 夜=暗)
-  uDay:{value:0.85},                      // 内側(照射部)の明るさ係数
+  uDay:{value:1.28},                      // 内側(照射部)の明るさ係数(1.5倍)
   uTint:{value:new THREE.Color(0x45320e)} // 内側に足す黄色み(+20%)
 };
 function applyGroundMask(mat){
@@ -2023,7 +2023,7 @@ function animate(){
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
     const spacing=EYE_HEIGHT*0.5, throwD=EYE_HEIGHT*30;
-    const lit=6*headOn;   // decay=0前提の強度。遠方まで一定に照らす
+    const lit=9*headOn;   // decay=0前提の強度(1.5倍)。遠方まで一定に照らす
     // (1)前方の立体物(対向車/電柱/壁=layer2)のみを照らす実スポットライト。地面は不照射。
     // decay=0で距離減衰なし＝地表照射エリアより遠い立体物も照らす。
     for(const [lt,sgn] of [[headL,-1],[headR,1]]){
