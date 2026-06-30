@@ -571,6 +571,7 @@ function deGreenMap(mat){
   if(!mat) return;
   if(mat.metalness!==undefined) mat.metalness=0;   // 鏡面ちらつき抑制
   if(mat.roughness!==undefined) mat.roughness=1;
+  applyGroundMask(mat);                              // 地面: 照射エリア内のみ昼地表+黄色
   mat._deGreened = true;
 }
 // シーン全体を走査し、緑/ティール系の装飾メッシュを非表示にする。
@@ -729,13 +730,7 @@ function markLightable(mesh){
   if(!g.boundingBox) g.computeBoundingBox();
   const bb=g.boundingBox; if(!bb) return;
   const sx=bb.max.x-bb.min.x, sy=bb.max.y-bb.min.y, sz=bb.max.z-bb.min.z;
-  const tall = (sy > 0.3*Math.max(sx,sz) || sy > 1.0);
-  const ms = Array.isArray(mesh.material)?mesh.material:[mesh.material];
-  if(tall){
-    mesh.layers.enable(HEAD_LAYER);              // 立体物=スポットで照らす(マスクなし→光が乗る)
-  }else{
-    ms.forEach(m=>{ if(m) applyGroundMask(m); }); // 平地=地面マスク適用(斑点防止)
-  }
+  if(sy > 0.3*Math.max(sx,sz) || sy > 1.0) mesh.layers.enable(HEAD_LAYER); // 立体物のみ
 }
 
 // 【抜本変更】光だまりをテクスチャ画像→シェーダー計算の加算グラデに置換。
