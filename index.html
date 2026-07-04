@@ -1376,16 +1376,7 @@ function updateAllTrafficCars(dt){
 // 地面マップGLBはライト非依存のことがあるため、マテリアル色を毎フレーム
 // ×k で直接暗くする。読み込み時に {mat, 元色} を集めておく。
 const nightMats = [];
-function collectNightMat(mat){
-  if(!(mat && mat.color)) return;
-  const base=mat.color.clone();
-  // 窓明かり等は夜も暗くせず発光的に残す(闇の中でも明るい)。対象は
-  // 「白に近い色」または「黄色に近い色」。赤/緑/青単色など他の色は通常どおり暗転。
-  const nearWhite  = Math.min(base.r,base.g,base.b) > 0.6;
-  const nearYellow = base.g>0.4 && base.b < base.r-0.2 && base.b < base.g-0.15;
-  const glow = nearWhite || nearYellow;
-  nightMats.push({mat, base, glow});
-}
+function collectNightMat(mat){ if(mat && mat.color) nightMats.push({mat, base:mat.color.clone()}); }
 function loadSpecialModel(file,px,py,pz){
   return new Promise(resolve=>{
     new GLTFLoader().load(file+'?v='+Date.now(),gltf=>{
@@ -1958,9 +1949,8 @@ function animate(){
   const gd=_grdTmp.copy(GROUND_FOG_COLOR).multiplyScalar(kg);
   scene.fog.color.lerp(gd,sp);
   extDesertPlane.material.color.copy(gd);
-  // 窓明かり(白/黄)は夜ほど増幅して強く光らせる。他マテリアルは×kgで暗転。
-  const glowBoost = 1 + 4*(1-kg);
-  for(let i=0;i<nightMats.length;i++){ const nm=nightMats[i]; nm.mat.color.copy(nm.base).multiplyScalar(nm.glow?glowBoost:kg); }
+  // 全マテリアルを×kgで暗転(兄弟版の白/黄発光=窓明かり演出は砂漠では地面が光るため廃止)。
+  for(let i=0;i<nightMats.length;i++){ nightMats[i].mat.color.copy(nightMats[i].base).multiplyScalar(kg); }
   if(headOn>0){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
