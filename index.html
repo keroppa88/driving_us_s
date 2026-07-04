@@ -1954,7 +1954,7 @@ function animate(){
   const headOn = lightManualOn ? lightFade : 0;
   // 空が暗いほど地上(遠景平面＋フォグ＋GLB)を暗く。ライト点灯時は下限を底上げし、
   // unlitな壁もヘッドライト下で見えるように(地表とのギャップ縮小)。
-  const _kg0=Math.max(0,Math.min(1,b/0.40)), kg=Math.max(headOn*0.28, _kg0*_kg0);
+  const _kg0=Math.max(0,Math.min(1,b/0.40)), kg=Math.max(headOn*0.12, _kg0*_kg0);
   const gd=_grdTmp.copy(GROUND_FOG_COLOR).multiplyScalar(kg);
   scene.fog.color.lerp(gd,sp);
   extDesertPlane.material.color.copy(gd);
@@ -1976,11 +1976,11 @@ function animate(){
     }
     // 地表の光だまり(加算): 暗いunlit地面でも照射部を明るく見せる。
     for(const [pool,sgn] of [[poolL,-1],[poolR,1]]){
-      pool.visible=true; pool.material.opacity=Math.min(1,headOn*0.10);
-      pool.position.copy(camera.position).addScaledVector(_hFwd,throwD*0.55).addScaledVector(_hRt,sgn*spread*0.5);
+      pool.visible=true; pool.material.opacity=Math.min(1,headOn*0.16);
+      pool.position.copy(camera.position).addScaledVector(_hFwd,throwD*0.5).addScaledVector(_hRt,sgn*spread*0.5);
       pool.position.y=0.06;
       pool.rotation.y=eff;
-      pool.scale.set(spread*2.7,2, throwD*5.5);   // 横幅・高さ・奥行
+      pool.scale.set(spread*1.4,2, throwD*3.0);   // 横幅(狭く)・高さ・奥行(短く)
     }
   } else {
     headL.visible=headR.visible=false;
