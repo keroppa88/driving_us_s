@@ -563,7 +563,7 @@ function applyGroundMask(mat){
     sh.fragmentShader = 'varying vec3 vWPosM; uniform vec3 uHeadL; uniform vec3 uHeadR2; uniform vec2 uHeadFwd; uniform float uHeadW; uniform float uHeadLen; uniform float uHeadOn; uniform float uNight; uniform float uDay; uniform vec3 uTint;\n' + sh.fragmentShader
       .replace('#include <map_fragment>','#include <map_fragment>\n vec3 gAlbedoM=diffuseColor.rgb;')
       .replace('#include <dithering_fragment>',
-        '#include <dithering_fragment>\n { vec2 fw=normalize(uHeadFwd); vec2 pp=vec2(-fw.y,fw.x); vec2 rL=vWPosM.xz-uHeadL.xz; float dL=length(vec2(dot(rL,pp)/uHeadW, dot(rL,fw)/uHeadLen)); vec2 rR=vWPosM.xz-uHeadR2.xz; float dR=length(vec2(dot(rR,pp)/uHeadW, dot(rR,fw)/uHeadLen)); float ins=max(smoothstep(1.0,0.1,dL),smoothstep(1.0,0.1,dR)); float hfall=1.0-smoothstep(0.40,0.54,vWPosM.y); float inside=pow(ins,0.7)*hfall*uHeadOn*0.95; vec3 nightCol=gl_FragColor.rgb*uNight; vec3 litCol=gAlbedoM*uDay+uTint; gl_FragColor.rgb=mix(nightCol, litCol, inside); }');
+        '#include <dithering_fragment>\n { vec2 fw=normalize(uHeadFwd); vec2 pp=vec2(-fw.y,fw.x); vec2 rL=vWPosM.xz-uHeadL.xz; float dL=length(vec2(dot(rL,pp)/uHeadW, dot(rL,fw)/uHeadLen)); vec2 rR=vWPosM.xz-uHeadR2.xz; float dR=length(vec2(dot(rR,pp)/uHeadW, dot(rR,fw)/uHeadLen)); float ins=max(smoothstep(1.0,0.1,dL),smoothstep(1.0,0.1,dR)); float hfall=1.0-smoothstep(0.54,1.08,vWPosM.y); float inside=pow(ins,0.7)*hfall*uHeadOn*0.95; vec3 nightCol=gl_FragColor.rgb*uNight; vec3 litCol=gAlbedoM*uDay+uTint; gl_FragColor.rgb=mix(nightCol, litCol, inside); }');
   };
   mat.needsUpdate = true;
 }
