@@ -2022,17 +2022,10 @@ function animate(){
     const eff=getEffectiveYaw();
     _hFwd.set(0,0,-1).applyEuler(_hEul.set(0,eff,0));
     _hRt.set(1,0,0).applyEuler(_hEul.set(0,eff,0));
-    const spacing=EYE_HEIGHT*0.5, throwD=EYE_HEIGHT*30;
-    const lit=9*headOn;   // decay=0前提の強度(1.5倍)。遠方まで一定に照らす
-    // (1)前方の立体物(対向車/電柱/壁=layer2)のみを照らす実スポットライト。地面は不照射。
-    // decay=0で距離減衰なし＝地表照射エリアより遠い立体物も照らす。
-    for(const [lt,sgn] of [[headL,-1],[headR,1]]){
-      lt.visible=true; lt.intensity=lit; lt.decay=0; lt.distance=0; lt.angle=0.6; lt.penumbra=0.5; // distance=0=無限(減衰なし)
-      lt.position.copy(camera.position).addScaledVector(_hRt,sgn*spacing).addScaledVector(_hFwd,EYE_HEIGHT*0.3);
-      lt.position.y=EYE_HEIGHT*0.8;
-      lt.target.position.copy(camera.position).addScaledVector(_hFwd,throwD).addScaledVector(_hRt,sgn*EYE_HEIGHT*2);
-      lt.target.position.y=EYE_HEIGHT*0.8; lt.target.updateMatrixWorld();
-    }
+    const throwD=EYE_HEIGHT*30;
+    // (1)スポットライトは無効化。立体物(電柱等)を下から上まで照らしてしまうため。
+    //     照射は地面マスク(2)のみで行う。
+    headL.visible=false; headR.visible=false;
     // (2)地面マスク: 左右2つの楕円(前方に細長く)を中央で重ねる(車の2灯)。地平線方向まで延長。
     const gThrow=EYE_HEIGHT*5.625, gSide=EYE_HEIGHT*1.0;
     headMaskU.uHeadL.value.copy(camera.position).addScaledVector(_hFwd,gThrow*3.2).addScaledVector(_hRt,-gSide); headMaskU.uHeadL.value.y=0;
